@@ -14,7 +14,7 @@ import { FloatingActionButton } from "@/components/floating-action-button"
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<
     "storage" | "shopping" | "camera" | "meals"
-  >("meals")
+  >("shopping")
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -38,7 +38,7 @@ export default function Home() {
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
 
-    const pages = ["meals", "storage", "shopping", "camera"] as const
+    const pages = ["shopping", "storage", "meals", "camera"] as const
     const currentIndex = pages.indexOf(currentPage)
 
     if (isLeftSwipe && currentIndex < pages.length - 1) {
@@ -126,13 +126,13 @@ export default function Home() {
         <nav className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-md border-t border-gray-300/30 shadow-lg">
           <div className="flex items-center justify-around p-2">
             <Button
-              variant={currentPage === "meals" ? "default" : "ghost"}
+              variant={currentPage === "shopping" ? "default" : "ghost"}
               size="sm"
-              onClick={() => navigateToPage("meals")}
+              onClick={() => navigateToPage("shopping")}
               className="flex flex-col gap-1 h-auto py-2 transition-all duration-200"
             >
-              <UtensilsCrossed className="w-4 h-4" />
-              <span className="text-xs">Meals</span>
+              <ShoppingCart className="w-4 h-4" />
+              <span className="text-xs">Shopping</span>
             </Button>
             <Button
               variant={currentPage === "storage" ? "default" : "ghost"}
@@ -144,13 +144,13 @@ export default function Home() {
               <span className="text-xs">Storage</span>
             </Button>
             <Button
-              variant={currentPage === "shopping" ? "default" : "ghost"}
+              variant={currentPage === "meals" ? "default" : "ghost"}
               size="sm"
-              onClick={() => navigateToPage("shopping")}
+              onClick={() => navigateToPage("meals")}
               className="flex flex-col gap-1 h-auto py-2 transition-all duration-200"
             >
-              <ShoppingCart className="w-4 h-4" />
-              <span className="text-xs">Shopping</span>
+              <UtensilsCrossed className="w-4 h-4" />
+              <span className="text-xs">Meals</span>
             </Button>
           </div>
         </nav>
@@ -159,7 +159,10 @@ export default function Home() {
 
       {/* Floating Action Button */}
       {currentPage !== "camera" && (
-        <FloatingActionButton currentPage={currentPage} />
+        <FloatingActionButton 
+          currentPage={currentPage} 
+          onNavigate={(page) => setCurrentPage(page)}
+        />
       )}
     </div>
   )

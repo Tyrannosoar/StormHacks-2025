@@ -5,14 +5,17 @@ import { AddItemModal } from "@/components/add-item-modal"
 import { AddShoppingItemModal } from "@/components/add-shopping-item-modal"
 import { AddEventModal } from "@/components/add-event-modal"
 import { VoiceMealAssistantModal } from "./voice-meal-assistant-modal"
+import { VoiceNavigationModal } from "./voice-navigation-modal"
 
 interface FloatingActionButtonProps {
   currentPage: string
+  onNavigate?: (page: "shopping" | "storage" | "meals" | "camera") => void
 }
 
-export function FloatingActionButton({ currentPage }: FloatingActionButtonProps) {
+export function FloatingActionButton({ currentPage, onNavigate }: FloatingActionButtonProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showVoiceNav, setShowVoiceNav] = useState(false)
 
   const getModalForPage = () => {
     if (!showAddModal) return null
@@ -59,10 +62,8 @@ export function FloatingActionButton({ currentPage }: FloatingActionButtonProps)
     if (isExpanded) {
       setIsExpanded(false)
     } else {
-      // Only show modal for pages that have add functionality
-      if (currentPage !== "meals") {
-        setShowAddModal(true)
-      }
+      // Show voice navigation for all pages
+      setShowVoiceNav(true)
     }
   }
 
@@ -82,6 +83,19 @@ export function FloatingActionButton({ currentPage }: FloatingActionButtonProps)
       </div>
 
       {getModalForPage()}
+      
+      {/* Voice Navigation Modal */}
+      <VoiceNavigationModal
+        isOpen={showVoiceNav}
+        onClose={() => setShowVoiceNav(false)}
+        onNavigate={(page) => {
+          if (onNavigate) {
+            onNavigate(page)
+          }
+          setShowVoiceNav(false)
+        }}
+        currentPage={currentPage}
+      />
     </>
   )
 }
