@@ -12,6 +12,30 @@ fi
 
 echo "✅ Python 3 found"
 
+# Check if ffmpeg is installed
+if ! command -v ffmpeg &> /dev/null; then
+    echo "📦 Installing ffmpeg (required for Whisper)..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        if command -v brew &> /dev/null; then
+            brew install ffmpeg
+        else
+            echo "❌ Homebrew not found. Please install ffmpeg manually:"
+            echo "   brew install ffmpeg"
+            echo "   Or visit: https://ffmpeg.org/download.html"
+            exit 1
+        fi
+    else
+        echo "❌ Please install ffmpeg manually:"
+        echo "   Ubuntu/Debian: sudo apt install ffmpeg"
+        echo "   CentOS/RHEL: sudo yum install ffmpeg"
+        echo "   Or visit: https://ffmpeg.org/download.html"
+        exit 1
+    fi
+else
+    echo "✅ ffmpeg found"
+fi
+
 # Check if we're in a conda environment
 if [[ "$CONDA_DEFAULT_ENV" != "" ]]; then
     echo "🐍 Detected conda environment: $CONDA_DEFAULT_ENV"

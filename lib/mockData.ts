@@ -1,5 +1,5 @@
 // Mock data for Vercel deployment
-export const shoppingItems = [
+let shoppingItems = [
   // High Priority
   { id: 1, name: "Milk", amount: "1L", plannedAmount: "1L", category: "Dairy", priority: "high", isCompleted: false },
   { id: 2, name: "Bread", amount: "1 loaf", plannedAmount: "1 loaf", category: "Grains", priority: "high", isCompleted: false },
@@ -29,7 +29,7 @@ export const shoppingItems = [
   { id: 22, name: "Cereal", amount: "500g", plannedAmount: "300g", category: "Grains", priority: "low", isCompleted: false },
 ];
 
-export const storageItems = [
+let storageItems = [
   // Dairy
   { id: 1, name: "Whole Milk", amount: "1L", expiryDays: 3, plannedAmount: "500ml", category: "Dairy" },
   { id: 2, name: "Greek Yogurt", amount: "500g", expiryDays: 1, plannedAmount: "200g", category: "Dairy" },
@@ -105,3 +105,17 @@ export const meals = [
     isArchived: false
   }
 ];
+
+// Export getter functions to ensure we always get the current state
+export const getShoppingItems = () => shoppingItems;
+export const getStorageItems = () => storageItems;
+export const getMeals = () => meals;
+
+// Export setters for API routes
+export const updateShoppingItems = (items: typeof shoppingItems) => {
+  shoppingItems = items;
+};
+
+export const updateStorageItems = (items: typeof storageItems) => {
+  storageItems = items;
+};

@@ -25,35 +25,58 @@ interface SavedMeal extends Meal {
 }
 
 export function MealsPage() {
-  const [activeTab, setActiveTab] = useState<"saved" | "explore">("explore")
+  const [activeTab, setActiveTab] = useState<"my_food" | "explore">("my_food")
   const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([])
   const [exploreMeals, setExploreMeals] = useState<Meal[]>([])
   const [loading, setLoading] = useState(true)
+  const [showSavedRecipes, setShowSavedRecipes] = useState(false)
+  const [showCreateRecipe, setShowCreateRecipe] = useState(false)
+  const [newRecipe, setNewRecipe] = useState({
+    title: '',
+    image: '',
+    cookTime: '',
+    servings: '',
+    ingredients: '',
+    instructions: ''
+  })
+
+  const fetchMeals = async () => {
+    try {
+      setLoading(true)
+      // Fetch My Food meals (with ingredient availability)
+      const myFoodResponse = await fetch('http://localhost:3001/api/meals/my-food')
+      if (myFoodResponse.ok) {
+        const myFoodData = await myFoodResponse.json()
+        if (myFoodData.success && myFoodData.data) {
+          setSavedMeals(myFoodData.data)
+        }
+      }
+
+      // Fetch explore meals
+      const exploreResponse = await fetch('http://localhost:3001/api/meals/explore/meals')
+      if (exploreResponse.ok) {
+        const exploreData = await exploreResponse.json()
+        if (exploreData.success && exploreData.data) {
+          setExploreMeals(exploreData.data)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch meals:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchMeals = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/meals')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success && data.data) {
-            // Filter saved meals (those with plannedDate)
-            const saved = data.data.filter((meal: any) => meal.plannedDate)
-            // Filter explore meals (those without plannedDate)
-            const explore = data.data.filter((meal: any) => !meal.plannedDate)
-            setSavedMeals(saved)
-            setExploreMeals(explore)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch meals:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchMeals()
   }, [])
+
+  // Refetch data when switching to My Food tab
+  useEffect(() => {
+    if (activeTab === 'my_food') {
+      fetchMeals()
+    }
+  }, [activeTab])
 
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [showMealDetailModal, setShowMealDetailModal] = useState(false)
@@ -107,6 +130,63 @@ export function MealsPage() {
     setSelectedMeal(null)
     setPlannedDate("")
     setMealType("dinner")
+  }
+
+  const handleCreateRecipe = async () => {
+    if (!newRecipe.title || !newRecipe.ingredients || !newRecipe.instructions) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    try {
+      const recipeData = {
+        title: newRecipe.title,
+        image: newRecipe.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&crop=center",
+        cookTime: parseInt(newRecipe.cookTime) || 30,
+        servings: parseInt(newRecipe.servings) || 4,
+        hasAllIngredients: false,
+        ingredients: newRecipe.ingredients.split('\n').filter(line => line.trim()),
+        instructions: newRecipe.instructions.split('\n').filter(line => line.trim()),
+        plannedDate: new Date().toISOString().split('T')[0],
+        mealType: "dinner" as const,
+        isArchived: false
+      }
+
+      const response = await fetch('http://localhost:3001/api/meals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(recipeData)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          // Reset form
+          setNewRecipe({
+            title: '',
+            image: '',
+            cookTime: '',
+            servings: '',
+            ingredients: '',
+            instructions: ''
+          })
+          
+          setShowCreateRecipe(false)
+          
+          // Refresh the data to show the new recipe
+          await fetchMeals()
+          
+          alert('Recipe created successfully!')
+        }
+      } else {
+        alert('Failed to create recipe')
+      }
+    } catch (error) {
+      console.error('Error creating recipe:', error)
+      alert('Error creating recipe')
+    }
   }
 
   const MealCard = ({ meal, isSaved = false }: { meal: Meal | SavedMeal; isSaved?: boolean }) => (
@@ -198,18 +278,18 @@ export function MealsPage() {
       <div className="p-4 border-b border-border">
         <div className="flex bg-muted rounded-lg p-1">
           <Button
+            variant={activeTab === "my_food" ? "default" : "ghost"}
+            onClick={() => setActiveTab("my_food")}
+            className="flex-1 rounded-md"
+          >
+            My Food
+          </Button>
+          <Button
             variant={activeTab === "explore" ? "default" : "ghost"}
             onClick={() => setActiveTab("explore")}
             className="flex-1 rounded-md"
           >
             Explore
-          </Button>
-          <Button
-            variant={activeTab === "saved" ? "default" : "ghost"}
-            onClick={() => setActiveTab("saved")}
-            className="flex-1 rounded-md"
-          >
-            Saved
           </Button>
         </div>
       </div>
@@ -219,35 +299,80 @@ export function MealsPage() {
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading meals...</p>
           </div>
-        ) : activeTab === "explore" ? (
+        ) : activeTab === "my_food" ? (
+          <div className="space-y-6">
+            {/* My Food Action Buttons */}
+            <div className="flex gap-3">
+              <Button
+                onClick={async () => {
+                  await fetchMeals()
+                  setShowSavedRecipes(true)
+                }}
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
+              >
+                <Archive className="w-4 h-4" />
+                View Saved Recipes
+              </Button>
+              <Button
+                onClick={() => setShowCreateRecipe(true)}
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Create Recipe
+              </Button>
+            </div>
+
+            {/* Default Feed - Meals with Available Ingredients */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Ready to Cook</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {savedMeals.filter(meal => meal.hasAllIngredients).length > 0 ? (
+                  savedMeals
+                    .filter(meal => meal.hasAllIngredients)
+                    .map((meal) => <MealCard key={meal.id} meal={meal} isSaved />)
+                ) : (
+                  <div className="col-span-2 text-center py-8">
+                    <p className="text-muted-foreground">No meals ready to cook</p>
+                    <p className="text-sm text-muted-foreground mt-1">Add ingredients to your storage to see ready-to-cook meals</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Meals with Missing Ingredients */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Need Ingredients</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {savedMeals.filter(meal => !meal.hasAllIngredients).length > 0 ? (
+                  savedMeals
+                    .filter(meal => !meal.hasAllIngredients)
+                    .map((meal) => <MealCard key={meal.id} meal={meal} isSaved />)
+                ) : (
+                  <div className="col-span-2 text-center py-8">
+                    <p className="text-muted-foreground">All your saved meals are ready to cook!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {exploreMeals.map((meal) => (
               <MealCard key={meal.id} meal={meal} />
             ))}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {savedMeals.length > 0 ? (
-              savedMeals.map((meal) => <MealCard key={meal.id} meal={meal} isSaved />)
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No saved meals yet</p>
-                <p className="text-sm text-muted-foreground mt-1">Add meals from the Explore tab to get started</p>
-              </div>
-            )}
-          </div>
         )}
       </div>
 
       <Dialog open={showPlanModal} onOpenChange={setShowPlanModal}>
-        <DialogContent className="sm:max-w-md bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
+        <DialogContent className="sm:max-w-md bg-white border-gray-200 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Plan Your Meal</DialogTitle>
+            <DialogTitle className="text-gray-900">Plan Your Meal</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="meal-date" className="text-foreground">
+              <Label htmlFor="meal-date" className="text-gray-700">
                 When do you want to cook {selectedMeal?.title}?
               </Label>
               <Input
@@ -255,26 +380,26 @@ export function MealsPage() {
                 type="date"
                 value={plannedDate}
                 onChange={(e) => setPlannedDate(e.target.value)}
-                className="bg-background border-border text-foreground"
+                className="bg-white border-gray-300 text-gray-900"
                 min={new Date().toISOString().split("T")[0]}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-foreground">Meal Type</Label>
+              <Label className="text-gray-700">Meal Type</Label>
               <Select value={mealType} onValueChange={(value: "breakfast" | "lunch" | "dinner") => setMealType(value)}>
-                <SelectTrigger className="bg-background border-border text-foreground">
+                <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
-                  <SelectItem value="breakfast" className="text-foreground hover:bg-muted">
+                <SelectContent className="bg-white border-gray-200 shadow-lg">
+                  <SelectItem value="breakfast" className="text-gray-900 hover:bg-gray-100">
                     Breakfast
                   </SelectItem>
-                  <SelectItem value="lunch" className="text-foreground hover:bg-muted">
+                  <SelectItem value="lunch" className="text-gray-900 hover:bg-gray-100">
                     Lunch
                   </SelectItem>
-                  <SelectItem value="dinner" className="text-foreground hover:bg-muted">
+                  <SelectItem value="dinner" className="text-gray-900 hover:bg-gray-100">
                     Dinner
                   </SelectItem>
                 </SelectContent>
@@ -291,6 +416,106 @@ export function MealsPage() {
                 className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 Plan Meal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Saved Recipes Modal */}
+      <Dialog open={showSavedRecipes} onOpenChange={setShowSavedRecipes}>
+        <DialogContent className="max-w-4xl bg-white border-gray-200 shadow-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 text-2xl">My Saved Recipes</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {savedMeals.map((meal) => (
+              <MealCard key={meal.id} meal={meal} isSaved />
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Recipe Modal */}
+      <Dialog open={showCreateRecipe} onOpenChange={setShowCreateRecipe}>
+        <DialogContent className="max-w-2xl bg-white border-gray-200 shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 text-2xl">Create Custom Recipe</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipe-title" className="text-gray-700">Recipe Title *</Label>
+              <Input
+                id="recipe-title"
+                placeholder="Enter recipe name"
+                value={newRecipe.title}
+                onChange={(e) => setNewRecipe(prev => ({ ...prev, title: e.target.value }))}
+                className="bg-white border-gray-300 text-gray-900"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="recipe-image" className="text-gray-700">Image URL</Label>
+              <Input
+                id="recipe-image"
+                placeholder="https://example.com/image.jpg"
+                value={newRecipe.image}
+                onChange={(e) => setNewRecipe(prev => ({ ...prev, image: e.target.value }))}
+                className="bg-white border-gray-300 text-gray-900"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cook-time" className="text-gray-700">Cook Time (minutes)</Label>
+                <Input
+                  id="cook-time"
+                  type="number"
+                  placeholder="30"
+                  value={newRecipe.cookTime}
+                  onChange={(e) => setNewRecipe(prev => ({ ...prev, cookTime: e.target.value }))}
+                  className="bg-white border-gray-300 text-gray-900"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="servings" className="text-gray-700">Servings</Label>
+                <Input
+                  id="servings"
+                  type="number"
+                  placeholder="4"
+                  value={newRecipe.servings}
+                  onChange={(e) => setNewRecipe(prev => ({ ...prev, servings: e.target.value }))}
+                  className="bg-white border-gray-300 text-gray-900"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ingredients" className="text-gray-700">Ingredients (one per line) *</Label>
+              <textarea
+                id="ingredients"
+                placeholder="400g Spaghetti&#10;4 Eggs&#10;200g Bacon"
+                value={newRecipe.ingredients}
+                onChange={(e) => setNewRecipe(prev => ({ ...prev, ingredients: e.target.value }))}
+                className="w-full h-24 p-3 bg-white border border-gray-300 text-gray-900 rounded-md resize-none"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="instructions" className="text-gray-700">Instructions (one per line) *</Label>
+              <textarea
+                id="instructions"
+                placeholder="Boil pasta according to package instructions&#10;Cook bacon until crispy"
+                value={newRecipe.instructions}
+                onChange={(e) => setNewRecipe(prev => ({ ...prev, instructions: e.target.value }))}
+                className="w-full h-32 p-3 bg-white border border-gray-300 text-gray-900 rounded-md resize-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowCreateRecipe(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleCreateRecipe}
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                Create Recipe
               </Button>
             </div>
           </div>

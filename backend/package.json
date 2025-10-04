@@ -1,7 +1,7 @@
 {
-  "name": "quilar-backend",
+  "name": "magnacarter-backend",
   "version": "1.0.0",
-  "description": "Backend API for Quilar food management app",
+  "description": "Backend API for MagnaCarter food management app",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",

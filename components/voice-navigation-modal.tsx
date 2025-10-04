@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Mic, Loader2, Navigation, ShoppingCart, Package, UtensilsCrossed, Camera, Volume2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -25,12 +25,26 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
   const streamRef = useRef<MediaStream | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Periodic stream health check
+  useEffect(() => {
+    if (!isActive) return;
+
+    const healthCheckInterval = setInterval(() => {
+      if (streamRef.current && streamRef.current.getTracks().every(track => track.readyState === 'ended')) {
+        console.log('Stream health check: stream ended, reinitializing...');
+        checkAndRefreshStream();
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(healthCheckInterval);
+  }, [isActive]);
+
   const startVoiceAgent = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       setIsActive(true);
-      setTranscript("Voice agent activated. I'm listening...");
+      setTranscript("🎤 Voice agent ready! FFmpeg is installed - local Whisper is working. Speak now!");
       
       // Start the continuous listening loop
       await startContinuousListening();
@@ -42,51 +56,85 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
   };
 
   const startContinuousListening = async () => {
-    if (!streamRef.current) return;
+    if (!streamRef.current) {
+      console.log('No stream available, reinitializing...');
+      await startVoiceAgent();
+      return;
+    }
+
+    // Check if stream is still active
+    if (streamRef.current.getTracks().every(track => track.readyState === 'ended')) {
+      console.log('Stream ended, reinitializing...');
+      await startVoiceAgent();
+      return;
+    }
     
-    const mediaRecorder = new MediaRecorder(streamRef.current);
-    mediaRecorderRef.current = mediaRecorder;
-    audioChunksRef.current = [];
+    try {
+      // Use a more compatible audio format
+      const mediaRecorder = new MediaRecorder(streamRef.current, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
-      }
-    };
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
 
-    mediaRecorder.onstop = async () => {
-      console.log('MediaRecorder stopped, audio chunks:', audioChunksRef.current.length);
-      if (audioChunksRef.current.length > 0) {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        console.log('Created audio blob:', audioBlob.size, 'bytes');
-        await processAudioWithWhisper(audioBlob);
-      } else {
-        console.log('No audio chunks recorded');
-        setTranscript("No audio recorded. Please try speaking louder.");
+      mediaRecorder.onstop = async () => {
+        console.log('MediaRecorder stopped, audio chunks:', audioChunksRef.current.length);
+        if (audioChunksRef.current.length > 0) {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          console.log('Created audio blob:', audioBlob.size, 'bytes');
+          await processAudioWithWhisper(audioBlob);
+        } else {
+          console.log('No audio chunks recorded');
+          setTranscript("No audio recorded. Please try speaking louder.");
+          setTimeout(() => {
+            if (isActive) {
+              startContinuousListening();
+            }
+          }, 2000);
+        }
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        setTranscript("Recording error. Reinitializing microphone...");
         setTimeout(() => {
           if (isActive) {
-            startContinuousListening();
+            startVoiceAgent();
           }
-        }, 2000);
-      }
-    };
+        }, 1000);
+      };
 
-    mediaRecorder.start();
-    setListening(true);
-    setTranscript("Listening... Speak now!");
+      mediaRecorder.start();
+      setListening(true);
+      setTranscript("🎧 Listening... Speak clearly!");
 
-    // Stop recording after 3 seconds of silence or 10 seconds max
-    const maxRecordingTime = 10000; // 10 seconds max
-    const silenceTimeout = 3000; // 3 seconds of silence
-    
-    const timeoutId = setTimeout(() => {
-      if (mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        setListening(false);
-      }
-    }, maxRecordingTime);
-    
-    silenceTimeoutRef.current = timeoutId;
+      // Stop recording after 3 seconds of silence or 10 seconds max
+      const maxRecordingTime = 10000; // 10 seconds max
+      const silenceTimeout = 3000; // 3 seconds of silence
+      
+      const timeoutId = setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          setListening(false);
+        }
+      }, maxRecordingTime);
+      
+      silenceTimeoutRef.current = timeoutId;
+    } catch (error) {
+      console.error('Error starting MediaRecorder:', error);
+      setTranscript("Recording failed. Reinitializing microphone...");
+      setTimeout(() => {
+        if (isActive) {
+          startVoiceAgent();
+        }
+      }, 1000);
+    }
   };
 
   const stopVoiceAgent = () => {
@@ -106,9 +154,17 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
     setTranscript("");
   };
 
+  const checkAndRefreshStream = async () => {
+    if (!streamRef.current || streamRef.current.getTracks().every(track => track.readyState === 'ended')) {
+      console.log('Stream inactive, refreshing...');
+      setTranscript("🔄 Refreshing microphone access...");
+      await startVoiceAgent();
+    }
+  };
+
   const processAudioWithWhisper = async (audioBlob: Blob) => {
     setIsProcessing(true);
-    setTranscript("Processing audio with local Whisper...");
+    setTranscript("🎤 Processing your speech with local Whisper...");
     
     try {
       console.log('Processing audio blob:', audioBlob.size, 'bytes');
@@ -116,6 +172,7 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       const formData = new FormData();
       formData.append('file', audioBlob, 'audio.wav');
 
+      setTranscript("🔄 Sending audio to local Whisper for transcription...");
       console.log('Sending to local Whisper...');
       const response = await fetch('/api/whisper', {
         method: 'POST',
@@ -127,16 +184,8 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Local Whisper error:', errorData);
-        
-        if (errorData.fallback) {
-          setTranscript(`Local Whisper not available. Using browser speech recognition instead.`);
-          await fallbackToBrowserSpeech();
-          return;
-        } else {
-          setTranscript(`Local Whisper Error: ${response.status} - ${errorData.error}. Using browser speech recognition instead.`);
-          await fallbackToBrowserSpeech();
-          return;
-        }
+        setTranscript(`❌ Local Whisper Error: ${errorData.error || 'Unknown error'}. Check server logs.`);
+        return;
       }
 
       const data = await response.json();
@@ -145,11 +194,18 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       const text = data.text?.toLowerCase() || '';
       
       if (text.trim()) {
-        setTranscript(`You said: "${text}"`);
+        setTranscript(`✅ Transcription: "${text}"`);
         setLastCommand(text);
+        
+        // Show the command being processed
+        setTimeout(() => {
+          setTranscript(`🎯 Processing command: "${text}"`);
+        }, 1000);
+        
         await processVoiceCommand(text);
       } else {
-        setTranscript("I didn't catch that. Please try speaking more clearly.");
+        setTranscript("❌ No speech detected. Please try speaking more clearly.");
+        console.log('Empty transcription result');
         // Wait a moment then restart listening
         setTimeout(() => {
           if (isActive) {
@@ -168,60 +224,11 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
   };
 
   const fallbackToBrowserSpeech = async () => {
-    // Check for browser speech recognition support
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-      setTranscript("Browser speech recognition not supported. Local Whisper should be working - check the server logs.");
-      // Show manual navigation options
-      setTimeout(() => {
-        setTranscript("You can manually navigate using the buttons below, or check if local Whisper is properly installed.");
-      }, 2000);
-      return;
-    }
-
-    setTranscript("Using browser speech recognition...");
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onresult = (event: any) => {
-        const text = event.results[0][0].transcript.toLowerCase();
-        setTranscript(`You said: "${text}"`);
-        processVoiceCommand(text);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setTranscript(`Speech recognition error: ${event.error}. Local Whisper should be working - check server logs.`);
-        
-        // Show manual options after error
-        setTimeout(() => {
-          setTranscript("Manual navigation available - use the buttons below or check local Whisper installation.");
-        }, 2000);
-      };
-
-      recognition.onend = () => {
-        if (isActive && !isProcessing && !isSpeaking) {
-          setTimeout(() => {
-            startContinuousListening();
-          }, 1000);
-        }
-      };
-
-      recognition.onstart = () => {
-        setTranscript("Browser speech recognition active - speak now!");
-      };
-
-      recognition.start();
-    } catch (error) {
-      console.error('Error starting speech recognition:', error);
-      setTranscript("Speech recognition failed. Local Whisper should be working - check server logs.");
-    }
+    // Local Whisper should be working now with FFmpeg installed
+    // Check and refresh stream if needed
+    await checkAndRefreshStream();
+    setTranscript("🎤 Local Whisper ready! Start speaking...");
+    await startContinuousListening();
   };
 
   const processVoiceCommand = async (command: string) => {
@@ -268,13 +275,13 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
     let responseText = "";
     
     if (targetPage && targetPage !== currentPage) {
-      responseText = `Navigating to ${getPageName(targetPage)}.`;
+      responseText = `🚀 Navigating to ${getPageName(targetPage)}...`;
       onNavigate(targetPage as any);
       // Don't close the modal, just navigate
     } else if (targetPage === currentPage) {
-      responseText = `You're already on the ${getPageName(currentPage)} page!`;
+      responseText = `📍 You're already on the ${getPageName(currentPage)} page!`;
     } else {
-      responseText = "I didn't understand that. Try saying 'go to shopping', 'go to storage', 'go to meals', or 'go to camera'.";
+      responseText = `❓ I didn't understand that. Try saying 'go to shopping', 'go to storage', 'go to meals', or 'go to camera'.`;
     }
 
     // Show text response for now (ElevenLabs optional)
@@ -412,91 +419,21 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
             </div>
           </div>
 
-          {/* Transcript Display */}
+          {/* Live Transcript Display */}
           {transcript && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-1">
-                {transcript.startsWith("You said:") ? "Transcription:" : "Status:"}
-              </p>
-              <p className="font-medium text-gray-900">
-                {transcript.startsWith("You said:") ? transcript : `"${transcript}"`}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`w-2 h-2 rounded-full ${listening ? 'bg-green-500 animate-pulse' : isProcessing ? 'bg-yellow-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                <p className="text-sm font-medium text-blue-800">
+                  {listening ? "🎧 Listening..." : isProcessing ? "🔄 Processing..." : "💬 Response"}
+                </p>
+              </div>
+              <p className="text-gray-900 font-medium">
+                {transcript}
               </p>
             </div>
           )}
 
-          {/* Manual Navigation Buttons */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 mb-3">Manual Navigation</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                onClick={() => onNavigate("shopping")}
-                variant="outline"
-                className="flex items-center gap-2 h-auto py-3"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                <span className="text-sm">Shopping</span>
-              </Button>
-              <Button
-                onClick={() => onNavigate("storage")}
-                variant="outline"
-                className="flex items-center gap-2 h-auto py-3"
-              >
-                <Package className="w-4 h-4" />
-                <span className="text-sm">Storage</span>
-              </Button>
-              <Button
-                onClick={() => onNavigate("meals")}
-                variant="outline"
-                className="flex items-center gap-2 h-auto py-3"
-              >
-                <UtensilsCrossed className="w-4 h-4" />
-                <span className="text-sm">Meals</span>
-              </Button>
-              <Button
-                onClick={() => onNavigate("camera")}
-                variant="outline"
-                className="flex items-center gap-2 h-auto py-3"
-              >
-                <Camera className="w-4 h-4" />
-                <span className="text-sm">Camera</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Available Commands */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 mb-2">Voice Commands:</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4 text-blue-500" />
-                <span>"Go to shopping"</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Package className="w-4 h-4 text-green-500" />
-                <span>"Go to storage"</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <UtensilsCrossed className="w-4 h-4 text-orange-500" />
-                <span>"Go to meals"</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Camera className="w-4 h-4 text-purple-500" />
-                <span>"Go to camera"</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Close Button */}
-          <Button
-            onClick={() => {
-              stopVoiceAgent();
-              onClose();
-            }}
-            variant="outline"
-            className="w-full"
-          >
-            Close Voice Agent
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

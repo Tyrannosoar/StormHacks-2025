@@ -1,6 +1,35 @@
 import { Router } from 'express'
-import { meals } from '../data/hardcodedData'
+import { meals, storageItems } from '../data/hardcodedData'
 import { ApiResponse, Meal } from '../types'
+import fs from 'fs'
+import path from 'path'
+
+// File path for persistent storage
+const DATA_FILE = path.join(__dirname, '../../data/customMeals.json')
+
+// Load custom meals from file or create empty array
+let customMeals: Meal[] = []
+try {
+  if (fs.existsSync(DATA_FILE)) {
+    const data = fs.readFileSync(DATA_FILE, 'utf8')
+    customMeals = JSON.parse(data)
+  }
+} catch (error) {
+  console.error('Error loading custom meals:', error)
+  customMeals = []
+}
+
+// Save custom meals to file
+const saveCustomMeals = () => {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(customMeals, null, 2))
+  } catch (error) {
+    console.error('Error saving custom meals:', error)
+  }
+}
+
+// Get all meals (hardcoded + custom)
+const getAllMeals = () => [...meals, ...customMeals]
 
 const router = Router()
 
@@ -9,7 +38,7 @@ router.get('/', (req, res) => {
   try {
     const response: ApiResponse<Meal[]> = {
       success: true,
-      data: meals,
+      data: getAllMeals(),
       message: 'Meals retrieved successfully'
     }
     res.json(response)
@@ -26,7 +55,7 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   try {
     const id = req.params.id
-    const meal = meals.find(meal => meal.id === id)
+    const meal = getAllMeals().find(meal => meal.id === id)
     
     if (!meal) {
       const response: ApiResponse<null> = {
@@ -55,11 +84,12 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
   try {
     const newMeal: Meal = {
-      id: `meal-${Date.now()}`,
+      id: `custom-${Date.now()}`,
       ...req.body
     }
     
-    meals.push(newMeal)
+    customMeals.push(newMeal)
+    saveCustomMeals()
     
     const response: ApiResponse<Meal> = {
       success: true,
@@ -80,7 +110,8 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   try {
     const id = req.params.id
-    const mealIndex = meals.findIndex(meal => meal.id === id)
+    const allMeals = getAllMeals()
+    const mealIndex = allMeals.findIndex(meal => meal.id === id)
     
     if (mealIndex === -1) {
       const response: ApiResponse<null> = {
@@ -90,11 +121,23 @@ router.put('/:id', (req, res) => {
       return res.status(404).json(response)
     }
 
-    meals[mealIndex] = { ...meals[mealIndex], ...req.body }
+    // Check if it's a custom meal
+    const customMealIndex = customMeals.findIndex(meal => meal.id === id)
+    if (customMealIndex !== -1) {
+      customMeals[customMealIndex] = { ...customMeals[customMealIndex], ...req.body }
+      saveCustomMeals()
+    } else {
+      // For hardcoded meals, we can't modify them, so return error
+      const response: ApiResponse<null> = {
+        success: false,
+        error: 'Cannot modify hardcoded meals'
+      }
+      return res.status(400).json(response)
+    }
     
     const response: ApiResponse<Meal> = {
       success: true,
-      data: meals[mealIndex],
+      data: customMeals[customMealIndex],
       message: 'Meal updated successfully'
     }
     res.json(response)
@@ -111,17 +154,18 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   try {
     const id = req.params.id
-    const mealIndex = meals.findIndex(meal => meal.id === id)
+    const customMealIndex = customMeals.findIndex(meal => meal.id === id)
     
-    if (mealIndex === -1) {
+    if (customMealIndex === -1) {
       const response: ApiResponse<null> = {
         success: false,
-        error: 'Meal not found'
+        error: 'Meal not found or cannot delete hardcoded meals'
       }
       return res.status(404).json(response)
     }
 
-    const deletedMeal = meals.splice(mealIndex, 1)[0]
+    const deletedMeal = customMeals.splice(customMealIndex, 1)[0]
+    saveCustomMeals()
     
     const response: ApiResponse<Meal> = {
       success: true,
@@ -141,7 +185,7 @@ router.delete('/:id', (req, res) => {
 // GET /api/meals/saved - Get saved meals only
 router.get('/saved/meals', (req, res) => {
   try {
-    const savedMeals = meals.filter(meal => meal.id.startsWith('saved-') || meal.isArchived === false)
+    const savedMeals = getAllMeals().filter(meal => meal.id.startsWith('saved-') || meal.isArchived === false)
     
     const response: ApiResponse<Meal[]> = {
       success: true,
@@ -161,7 +205,7 @@ router.get('/saved/meals', (req, res) => {
 // GET /api/meals/explore - Get explore meals only
 router.get('/explore/meals', (req, res) => {
   try {
-    const exploreMeals = meals.filter(meal => meal.id.startsWith('explore-'))
+    const exploreMeals = getAllMeals().filter(meal => meal.id.startsWith('explore-'))
     
     const response: ApiResponse<Meal[]> = {
       success: true,
@@ -178,11 +222,55 @@ router.get('/explore/meals', (req, res) => {
   }
 })
 
+// GET /api/meals/my-food - Get meals with ingredient availability check
+router.get('/my-food', (req, res) => {
+  try {
+    // Get saved meals (those with plannedDate or custom recipes)
+    const savedMeals = getAllMeals().filter(meal => meal.plannedDate || meal.id.startsWith('custom-'))
+    
+    // Function to check if ingredients are available in storage
+    const checkIngredientAvailability = (meal: Meal) => {
+      const availableIngredients = storageItems.map(item => item.name.toLowerCase())
+      const mealIngredients = meal.ingredients.map(ingredient => 
+        ingredient.toLowerCase().split(' ').slice(1).join(' ') // Remove quantity, keep ingredient name
+      )
+      
+      const availableCount = mealIngredients.filter(ingredient => 
+        availableIngredients.some(available => 
+          available.includes(ingredient) || ingredient.includes(available)
+        )
+      ).length
+      
+      return {
+        ...meal,
+        hasAllIngredients: availableCount === mealIngredients.length,
+        availableIngredientsCount: availableCount,
+        totalIngredientsCount: mealIngredients.length
+      }
+    }
+    
+    const mealsWithAvailability = savedMeals.map(checkIngredientAvailability)
+    
+    const response: ApiResponse<any[]> = {
+      success: true,
+      data: mealsWithAvailability,
+      message: 'My Food meals retrieved successfully'
+    }
+    res.json(response)
+  } catch (error) {
+    const response: ApiResponse<null> = {
+      success: false,
+      error: 'Failed to retrieve My Food meals'
+    }
+    res.status(500).json(response)
+  }
+})
+
 // GET /api/meals/type/:mealType - Get meals by type
 router.get('/type/:mealType', (req, res) => {
   try {
     const mealType = req.params.mealType as 'breakfast' | 'lunch' | 'dinner'
-    const filteredMeals = meals.filter(meal => meal.mealType === mealType)
+    const filteredMeals = getAllMeals().filter(meal => meal.mealType === mealType)
     
     const response: ApiResponse<Meal[]> = {
       success: true,
@@ -203,7 +291,7 @@ router.get('/type/:mealType', (req, res) => {
 router.get('/ingredients/:ingredient', (req, res) => {
   try {
     const ingredient = req.params.ingredient.toLowerCase()
-    const filteredMeals = meals.filter(meal => 
+    const filteredMeals = getAllMeals().filter(meal => 
       meal.ingredients.some(ing => ing.toLowerCase().includes(ingredient))
     )
     
@@ -226,22 +314,23 @@ router.get('/ingredients/:ingredient', (req, res) => {
 router.put('/:id/archive', (req, res) => {
   try {
     const id = req.params.id
-    const mealIndex = meals.findIndex(meal => meal.id === id)
+    const customMealIndex = customMeals.findIndex(meal => meal.id === id)
     
-    if (mealIndex === -1) {
+    if (customMealIndex === -1) {
       const response: ApiResponse<null> = {
         success: false,
-        error: 'Meal not found'
+        error: 'Meal not found or cannot archive hardcoded meals'
       }
       return res.status(404).json(response)
     }
 
-    meals[mealIndex].isArchived = !meals[mealIndex].isArchived
+    customMeals[customMealIndex].isArchived = !customMeals[customMealIndex].isArchived
+    saveCustomMeals()
     
     const response: ApiResponse<Meal> = {
       success: true,
-      data: meals[mealIndex],
-      message: `Meal ${meals[mealIndex].isArchived ? 'archived' : 'unarchived'} successfully`
+      data: customMeals[customMealIndex],
+      message: `Meal ${customMeals[customMealIndex].isArchived ? 'archived' : 'unarchived'} successfully`
     }
     res.json(response)
   } catch (error) {

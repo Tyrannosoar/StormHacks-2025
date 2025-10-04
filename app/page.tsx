@@ -95,7 +95,7 @@ export default function Home() {
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <Package className="w-5 h-5 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">Quilar</h1>
+          <h1 className="text-xl font-bold text-foreground">MagnaCarter</h1>
         </div>
 
         {currentPage !== "camera" && (

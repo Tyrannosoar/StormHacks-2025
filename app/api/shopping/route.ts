@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { shoppingItems } from '@/lib/mockData';
+import { getShoppingItems } from '@/lib/mockData';
 
 export async function GET() {
   try {
     return NextResponse.json({
       success: true,
-      data: shoppingItems,
+      data: getShoppingItems(),
       message: 'Shopping items retrieved successfully'
     });
   } catch (error) {
@@ -19,13 +19,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const currentItems = getShoppingItems();
     const newItem = {
-      id: Math.max(...shoppingItems.map(item => item.id)) + 1,
+      id: Math.max(...currentItems.map(item => item.id)) + 1,
       ...body,
       isCompleted: false
     };
     
-    shoppingItems.push(newItem);
+    currentItems.push(newItem);
     
     return NextResponse.json({
       success: true,
