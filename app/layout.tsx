@@ -7,7 +7,7 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Quilar - Smart Grocery Management",
+  title: "MagnaCarter - Smart Grocery Management",
   description: "Plan meals, track storage, and shop efficiently",
   generator: "v0.app",
 }

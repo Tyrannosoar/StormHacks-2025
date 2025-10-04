@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { storageItems } from '@/lib/mockData';
+import { getStorageItems } from '@/lib/mockData';
 
 export async function GET() {
   try {
     return NextResponse.json({
       success: true,
-      data: storageItems,
+      data: getStorageItems(),
       message: 'Storage items retrieved successfully'
     });
   } catch (error) {

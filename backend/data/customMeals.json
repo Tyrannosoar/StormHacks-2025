@@ -1,0 +1,19 @@
+[
+  {
+    "id": "custom-1759621469796",
+    "title": "test",
+    "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&crop=center",
+    "cookTime": 30,
+    "servings": 4,
+    "hasAllIngredients": false,
+    "ingredients": [
+      "400g spaghetti"
+    ],
+    "instructions": [
+      "test"
+    ],
+    "plannedDate": "2025-10-04",
+    "mealType": "dinner",
+    "isArchived": false
+  }
+]

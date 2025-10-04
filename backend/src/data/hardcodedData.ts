@@ -121,6 +121,164 @@ export const meals: Meal[] = [
     mealType: "dinner",
     isArchived: false
   },
+  {
+    id: "saved-3",
+    title: "Greek Salad",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&crop=center",
+    cookTime: 15,
+    servings: 2,
+    hasAllIngredients: true,
+    ingredients: ["3 Tomatoes", "1 Cucumber", "1 Red Onion", "200g Feta Cheese", "10 Kalamata Olives", "3 tbsp Olive Oil", "1 tbsp Oregano"],
+    instructions: [
+      "Chop tomatoes and cucumber",
+      "Slice red onion thinly",
+      "Combine vegetables in a bowl",
+      "Add feta cheese and olives",
+      "Drizzle with olive oil and season"
+    ],
+    plannedDate: "2025-01-27",
+    mealType: "lunch",
+    isArchived: false
+  },
+  {
+    id: "saved-4",
+    title: "Beef Stir Fry",
+    image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop&crop=center",
+    cookTime: 25,
+    servings: 4,
+    hasAllIngredients: false,
+    ingredients: ["600g Beef Strips", "2 Bell Peppers", "1 Broccoli Head", "4 tbsp Soy Sauce", "2 tbsp Oyster Sauce", "3 cloves Garlic", "1 tbsp Ginger", "2 tbsp Cornstarch"],
+    instructions: [
+      "Marinate beef with soy sauce and cornstarch",
+      "Heat oil in a wok",
+      "Stir-fry beef until browned",
+      "Add vegetables and cook until tender",
+      "Add sauces and seasonings",
+      "Serve over rice"
+    ],
+    plannedDate: "2025-01-28",
+    mealType: "dinner",
+    isArchived: false
+  },
+  {
+    id: "saved-5",
+    title: "Margherita Pizza",
+    image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&h=300&fit=crop&crop=center",
+    cookTime: 30,
+    servings: 4,
+    hasAllIngredients: false,
+    ingredients: ["500g Pizza Dough", "400g Crushed Tomatoes", "250g Mozzarella", "Fresh Basil", "2 tbsp Olive Oil", "Salt", "Black Pepper"],
+    instructions: [
+      "Preheat oven to 250°C",
+      "Roll out pizza dough",
+      "Spread tomato sauce",
+      "Add mozzarella cheese",
+      "Bake for 12-15 minutes",
+      "Garnish with fresh basil"
+    ],
+    plannedDate: "2025-01-29",
+    mealType: "dinner",
+    isArchived: false
+  },
+  {
+    id: "saved-6",
+    title: "Avocado Toast",
+    image: "https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&h=300&fit=crop&crop=center",
+    cookTime: 10,
+    servings: 2,
+    hasAllIngredients: true,
+    ingredients: ["4 slices Bread", "2 Avocados", "2 Eggs", "1 Lemon", "Salt", "Black Pepper", "Red Pepper Flakes"],
+    instructions: [
+      "Toast bread slices",
+      "Mash avocados with lemon juice",
+      "Season with salt and pepper",
+      "Fry eggs sunny side up",
+      "Spread avocado on toast",
+      "Top with fried eggs and red pepper flakes"
+    ],
+    plannedDate: "2025-01-30",
+    mealType: "breakfast",
+    isArchived: false
+  },
+  {
+    id: "saved-7",
+    title: "Caesar Salad",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&crop=center",
+    cookTime: 20,
+    servings: 3,
+    hasAllIngredients: true,
+    ingredients: ["1 Romaine Lettuce", "100g Parmesan", "2 slices Bread", "2 cloves Garlic", "3 tbsp Olive Oil", "1 Lemon", "2 Anchovies", "1 Egg Yolk"],
+    instructions: [
+      "Wash and chop lettuce",
+      "Make croutons from bread",
+      "Prepare Caesar dressing",
+      "Toss lettuce with dressing",
+      "Add parmesan and croutons",
+      "Serve immediately"
+    ],
+    plannedDate: "2025-01-31",
+    mealType: "lunch",
+    isArchived: false
+  },
+  {
+    id: "saved-8",
+    title: "Pasta Aglio e Olio",
+    image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop&crop=center",
+    cookTime: 20,
+    servings: 2,
+    hasAllIngredients: true,
+    ingredients: ["400g Spaghetti", "6 cloves Garlic", "6 tbsp Olive Oil", "1 tsp Red Pepper Flakes", "Fresh Parsley", "Salt"],
+    instructions: [
+      "Boil pasta until al dente",
+      "Heat olive oil with garlic",
+      "Add red pepper flakes",
+      "Toss pasta with oil mixture",
+      "Garnish with parsley and serve"
+    ],
+    plannedDate: "2025-02-01",
+    mealType: "dinner",
+    isArchived: false
+  },
+  {
+    id: "saved-9",
+    title: "Omelette",
+    image: "https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&h=300&fit=crop&crop=center",
+    cookTime: 15,
+    servings: 1,
+    hasAllIngredients: true,
+    ingredients: ["3 Eggs", "2 tbsp Butter", "50g Cheese", "Salt", "Black Pepper", "Fresh Herbs"],
+    instructions: [
+      "Beat eggs with salt and pepper",
+      "Heat butter in a pan",
+      "Pour in beaten eggs",
+      "Add cheese when half cooked",
+      "Fold omelette in half",
+      "Garnish with herbs"
+    ],
+    plannedDate: "2025-02-02",
+    mealType: "breakfast",
+    isArchived: false
+  },
+  {
+    id: "saved-10",
+    title: "Vegetable Soup",
+    image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop&crop=center",
+    cookTime: 45,
+    servings: 6,
+    hasAllIngredients: false,
+    ingredients: ["2 Carrots", "2 Celery Stalks", "1 Onion", "3 Potatoes", "1L Vegetable Stock", "2 tbsp Olive Oil", "Salt", "Black Pepper", "Fresh Thyme"],
+    instructions: [
+      "Chop all vegetables",
+      "Heat oil in a large pot",
+      "Sauté vegetables until soft",
+      "Add stock and bring to boil",
+      "Simmer for 30 minutes",
+      "Season and serve hot"
+    ],
+    plannedDate: "2025-02-03",
+    mealType: "lunch",
+    isArchived: false
+  },
 
   // Explore meals
   {
@@ -250,6 +408,92 @@ export const meals: Meal[] = [
       "Add red pepper flakes",
       "Toss pasta with oil mixture",
       "Garnish with parsley"
+    ]
+  },
+  // Aspirational meals - require more ingredients
+  {
+    id: "explore-9",
+    title: "Beef Wellington",
+    image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop&crop=center",
+    cookTime: 180,
+    servings: 6,
+    hasAllIngredients: false,
+    ingredients: ["1.5kg Beef Tenderloin", "500g Puff Pastry", "200g Mushrooms", "150g Pâté", "6 slices Prosciutto", "2 Egg Yolks", "Fresh Thyme", "Dijon Mustard"],
+    instructions: [
+      "Sear beef tenderloin on all sides",
+      "Brush with mustard and let cool",
+      "Sauté mushrooms until dry",
+      "Roll beef in prosciutto and pâté",
+      "Wrap in puff pastry and seal edges",
+      "Brush with egg wash and bake at 200°C for 25 minutes"
+    ]
+  },
+  {
+    id: "explore-10",
+    title: "Lobster Thermidor",
+    image: "https://images.unsplash.com/photo-1551218808-94e220e084d2?w=400&h=300&fit=crop&crop=center",
+    cookTime: 45,
+    servings: 4,
+    hasAllIngredients: false,
+    ingredients: ["4 Live Lobsters", "200ml Heavy Cream", "100g Gruyère Cheese", "50ml Brandy", "2 tbsp Dijon Mustard", "Fresh Tarragon", "Cayenne Pepper", "Breadcrumbs"],
+    instructions: [
+      "Boil lobsters for 8 minutes",
+      "Remove meat from shells",
+      "Make cream sauce with brandy and mustard",
+      "Combine lobster with sauce",
+      "Fill shells and top with cheese",
+      "Broil until golden brown"
+    ]
+  },
+  {
+    id: "explore-11",
+    title: "Truffle Risotto",
+    image: "https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=300&fit=crop&crop=center",
+    cookTime: 35,
+    servings: 4,
+    hasAllIngredients: false,
+    ingredients: ["400g Arborio Rice", "1L Chicken Stock", "200ml White Wine", "50g Truffle", "100g Parmesan", "2 Shallots", "Fresh Parsley", "Truffle Oil"],
+    instructions: [
+      "Sauté shallots until translucent",
+      "Add rice and toast for 2 minutes",
+      "Add wine and stir until absorbed",
+      "Add stock gradually while stirring",
+      "Finish with truffle and parmesan",
+      "Drizzle with truffle oil"
+    ]
+  },
+  {
+    id: "explore-12",
+    title: "Wagyu Beef Steak",
+    image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop&crop=center",
+    cookTime: 25,
+    servings: 2,
+    hasAllIngredients: false,
+    ingredients: ["2 Wagyu Steaks (300g each)", "Fresh Rosemary", "Garlic Cloves", "Sea Salt", "Black Pepper", "Butter", "Red Wine", "Shallots"],
+    instructions: [
+      "Season steaks with salt and pepper",
+      "Heat pan to very hot",
+      "Sear steaks for 3 minutes per side",
+      "Add butter, garlic, and rosemary",
+      "Baste steaks with butter",
+      "Rest for 5 minutes before serving"
+    ]
+  },
+  {
+    id: "explore-13",
+    title: "Foie Gras with Fig Compote",
+    image: "https://images.unsplash.com/photo-1551218808-94e220e084d2?w=400&h=300&fit=crop&crop=center",
+    cookTime: 30,
+    servings: 4,
+    hasAllIngredients: false,
+    ingredients: ["200g Foie Gras", "6 Fresh Figs", "50ml Port Wine", "2 tbsp Honey", "Brioche Bread", "Fresh Thyme", "Balsamic Vinegar", "Sea Salt"],
+    instructions: [
+      "Score foie gras and season",
+      "Sear in hot pan for 2 minutes per side",
+      "Make fig compote with port and honey",
+      "Toast brioche slices",
+      "Serve foie gras on brioche",
+      "Top with fig compote"
     ]
   }
 ]

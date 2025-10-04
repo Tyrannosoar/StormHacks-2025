@@ -94,9 +94,12 @@ export function ShoppingListPage() {
           item.id === itemId ? response.data! : item
         ))
         
-        // If item is now completed, add to completed items
+        // If item is now completed, add to completed items and show success message
         if (response.data.isCompleted) {
           setCompletedItems((prev) => [...prev, response.data!])
+          console.log('✅ Item completed and added to storage:', response.data.name)
+          // Show success message
+          alert(`✅ ${response.data.name} completed and added to storage!`)
           setTimeout(() => {
             setShoppingItems((prev) => prev.filter((item) => item.id !== itemId))
           }, 500)

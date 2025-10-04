@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true })) // Parse URL-encoded bodies
 app.get('/health', (req, res) => {
   res.json({ 
     success: true, 
-    message: 'Quilar Backend API is running',
+    message: 'MagnaCarter Backend API is running',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   })
@@ -47,7 +47,7 @@ app.use('/api/dashboard', dashboardRoutes)
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Welcome to Quilar Backend API',
+    message: 'Welcome to MagnaCarter Backend API',
     version: '1.0.0',
     endpoints: {
       health: '/health',
@@ -81,7 +81,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Quilar Backend API running on port ${PORT}`)
+  console.log(`🚀 MagnaCarter Backend API running on port ${PORT}`)
   console.log(`📊 Health check: http://localhost:${PORT}/health`)
   console.log(`📚 API Documentation: http://localhost:${PORT}/`)
   console.log(`🌐 CORS enabled for: http://localhost:3000, http://127.0.0.1:3000`)

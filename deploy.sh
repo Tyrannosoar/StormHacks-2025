@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Deploying Quilar to Vercel..."
+echo "🚀 Deploying MagnaCarter to Vercel..."
 echo "=================================="
 
 # Check if Vercel CLI is installed

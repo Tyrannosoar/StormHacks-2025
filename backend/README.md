@@ -1,6 +1,6 @@
-# Quilar Backend API
+# MagnaCarter Backend API
 
-A local backend API for the Quilar food management application, built with Express.js and TypeScript.
+A local backend API for the MagnaCarter food management application, built with Express.js and TypeScript.
 
 ## Features
 
