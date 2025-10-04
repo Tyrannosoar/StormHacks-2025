@@ -2,30 +2,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, AlertTriangle, ShoppingCart } from "lucide-react"
+import { dashboardApi } from "@/lib/api"
+import { useState, useEffect } from "react"
 
 export function MainDashboard() {
-  // Mock data for demonstration
-  const plannedMeals = [
-    { id: 1, name: "Spaghetti Carbonara", date: "Today", time: "7:00 PM" },
-    { id: 2, name: "Chicken Stir Fry", date: "Tomorrow", time: "6:30 PM" },
-    { id: 3, name: "Greek Salad", date: "Wednesday", time: "12:30 PM" },
-  ]
+  const [plannedMeals, setPlannedMeals] = useState([])
+  const [urgentShoppingItems, setUrgentShoppingItems] = useState([])
+  const [expiringItems, setExpiringItems] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const urgentShoppingItems = [
-    { id: 1, name: "Milk", priority: "high" },
-    { id: 2, name: "Bread", priority: "high" },
-    { id: 3, name: "Eggs", priority: "medium" },
-    { id: 4, name: "Tomatoes", priority: "medium" },
-    { id: 5, name: "Olive Oil", priority: "low" },
-  ]
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true)
+        const response = await dashboardApi.getOverview()
+        if (response.success && response.data) {
+          setPlannedMeals(response.data.plannedMeals || [])
+          setUrgentShoppingItems(response.data.urgentShoppingItems || [])
+          setExpiringItems(response.data.expiringItems || [])
+        }
+      } catch (err) {
+        console.error('Error loading dashboard data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const expiringItems = [
-    { id: 1, name: "Greek Yogurt", daysLeft: 1, category: "Dairy" },
-    { id: 2, name: "Spinach", daysLeft: 2, category: "Vegetables" },
-    { id: 3, name: "Chicken Breast", daysLeft: 3, category: "Meat" },
-    { id: 4, name: "Strawberries", daysLeft: 3, category: "Fruits" },
-    { id: 5, name: "Mozzarella", daysLeft: 4, category: "Dairy" },
-  ]
+    loadDashboardData()
+  }, [])
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

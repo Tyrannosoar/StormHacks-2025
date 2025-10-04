@@ -2,13 +2,14 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Milk, Apple, Beef, Coffee, Wheat, Package2, Droplets, Trash2 } from "lucide-react"
 import { AddShoppingItemModal } from "@/components/add-shopping-item-modal"
+import { shoppingApi } from "@/lib/api"
 
 interface ShoppingItem {
   id: number
@@ -33,91 +34,34 @@ const categoryIcons = {
 
 export function ShoppingListPage() {
   const [showAddModal, setShowAddModal] = useState(false)
-  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([
-    // High Priority
-    { id: 1, name: "Milk", amount: "1L", plannedAmount: "1L", category: "Dairy", priority: "high", isCompleted: false },
-    {
-      id: 2,
-      name: "Bread",
-      amount: "1 loaf",
-      plannedAmount: "1 loaf",
-      category: "Grains",
-      priority: "high",
-      isCompleted: false,
-    },
-    {
-      id: 3,
-      name: "Eggs",
-      amount: "12 pcs",
-      plannedAmount: "12 pcs",
-      category: "Dairy",
-      priority: "high",
-      isCompleted: false,
-    },
-
-    // Medium Priority
-    {
-      id: 4,
-      name: "Tomatoes",
-      amount: "6 pcs",
-      plannedAmount: "4 pcs",
-      category: "Vegetables",
-      priority: "medium",
-      isCompleted: false,
-    },
-    {
-      id: 5,
-      name: "Chicken Breast",
-      amount: "800g",
-      plannedAmount: "600g",
-      category: "Meat",
-      priority: "medium",
-      isCompleted: false,
-    },
-    {
-      id: 6,
-      name: "Greek Yogurt",
-      amount: "500g",
-      plannedAmount: "300g",
-      category: "Dairy",
-      priority: "medium",
-      isCompleted: false,
-    },
-
-    // Low Priority
-    {
-      id: 7,
-      name: "Olive Oil",
-      amount: "500ml",
-      plannedAmount: "250ml",
-      category: "Pantry",
-      priority: "low",
-      isCompleted: false,
-    },
-    {
-      id: 8,
-      name: "Bananas",
-      amount: "6 pcs",
-      plannedAmount: "4 pcs",
-      category: "Fruits",
-      priority: "low",
-      isCompleted: false,
-    },
-    {
-      id: 9,
-      name: "Rice",
-      amount: "1kg",
-      plannedAmount: "500g",
-      category: "Grains",
-      priority: "low",
-      isCompleted: false,
-    },
-  ])
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const [completedItems, setCompletedItems] = useState<ShoppingItem[]>([])
   const [swipeStates, setSwipeStates] = useState<Record<number, { isSwipedLeft: boolean; touchStartX: number | null }>>(
     {},
   )
+
+  // Load shopping items from API
+  useEffect(() => {
+    const loadShoppingItems = async () => {
+      try {
+        setLoading(true)
+        const response = await shoppingApi.getAll()
+        if (response.success && response.data) {
+          setShoppingItems(response.data)
+        }
+      } catch (err) {
+        setError('Failed to load shopping items')
+        console.error('Error loading shopping items:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadShoppingItems()
+  }, [])
 
   const activeItems = shoppingItems.filter((item) => !item.isCompleted)
   const categories = Array.from(new Set(activeItems.map((item) => item.category)))
@@ -135,23 +79,43 @@ export function ShoppingListPage() {
     }
   }
 
-  const handleItemCheck = (itemId: number) => {
+  const handleItemCheck = async (itemId: number) => {
     const item = shoppingItems.find((item) => item.id === itemId)
     if (!item) return
 
-    setShoppingItems((prev) => prev.map((item) => (item.id === itemId ? { ...item, isCompleted: true } : item)))
-    setCompletedItems((prev) => [...prev, { ...item, isCompleted: true }])
-
-    setTimeout(() => {
-      setShoppingItems((prev) => prev.filter((item) => item.id !== itemId))
-    }, 500)
-
-    console.log(`Added ${item.name} to storage`)
+    try {
+      // Update the item completion status via API
+      const response = await shoppingApi.toggle(itemId)
+      if (response.success && response.data) {
+        // Update local state with the response from API
+        setShoppingItems((prev) => prev.map((item) => 
+          item.id === itemId ? response.data : item
+        ))
+        
+        // If item is now completed, add to completed items
+        if (response.data.isCompleted) {
+          setCompletedItems((prev) => [...prev, response.data])
+          setTimeout(() => {
+            setShoppingItems((prev) => prev.filter((item) => item.id !== itemId))
+          }, 500)
+        }
+      }
+    } catch (err) {
+      console.error('Error updating item:', err)
+      setError('Failed to update item')
+    }
   }
 
-  const addNewItem = (newItem: Omit<ShoppingItem, "id" | "isCompleted">) => {
-    const id = Math.max(...shoppingItems.map((item) => item.id), 0) + 1
-    setShoppingItems([...shoppingItems, { ...newItem, id, isCompleted: false }])
+  const addNewItem = async (newItem: Omit<ShoppingItem, "id" | "isCompleted">) => {
+    try {
+      const response = await shoppingApi.create(newItem)
+      if (response.success && response.data) {
+        setShoppingItems((prev) => [...prev, response.data])
+      }
+    } catch (err) {
+      console.error('Error adding item:', err)
+      setError('Failed to add item')
+    }
   }
 
   const handleTouchStart = (itemId: number, e: React.TouchEvent) => {
@@ -196,6 +160,38 @@ export function ShoppingListPage() {
       ...prev,
       [itemId]: { isSwipedLeft: false, touchStartX: null },
     }))
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-xl font-semibold text-foreground">Shopping List</h2>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading shopping items...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-xl font-semibold text-foreground">Shopping List</h2>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
