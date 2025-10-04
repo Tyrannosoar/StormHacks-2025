@@ -1,101 +1,189 @@
-import Image from "next/image";
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { ShoppingCart, Package, Camera, Calendar, UtensilsCrossed } from "lucide-react"
+import { MainDashboard } from "@/components/main-dashboard"
+import { StoragePage } from "@/components/storage-page"
+import { ShoppingListPage } from "@/components/shopping-list-page"
+import { CameraPage } from "@/components/camera-page"
+import { CalendarPage } from "@/components/calendar-page"
+import { MealsPage } from "@/components/meals-page"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [currentPage, setCurrentPage] = useState<
+    "dashboard" | "storage" | "shopping" | "camera" | "calendar" | "meals"
+  >("dashboard")
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Handle swipe navigation with enhanced feedback
+  const minSwipeDistance = 50
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    const pages = ["dashboard", "meals", "storage", "shopping", "calendar", "camera"] as const
+    const currentIndex = pages.indexOf(currentPage)
+
+    if (isLeftSwipe && currentIndex < pages.length - 1) {
+      setIsTransitioning(true)
+      setTimeout(() => {
+        setCurrentPage(pages[currentIndex + 1])
+        setIsTransitioning(false)
+      }, 150)
+    }
+    if (isRightSwipe && currentIndex > 0) {
+      setIsTransitioning(true)
+      setTimeout(() => {
+        setCurrentPage(pages[currentIndex - 1])
+        setIsTransitioning(false)
+      }, 150)
+    }
+  }
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case "dashboard":
+        return <MainDashboard />
+      case "meals":
+        return <MealsPage />
+      case "storage":
+        return <StoragePage />
+      case "shopping":
+        return <ShoppingListPage />
+      case "calendar":
+        return <CalendarPage />
+      case "camera":
+        return <CameraPage onClose={() => setCurrentPage("dashboard")} />
+      default:
+        return <MainDashboard />
+    }
+  }
+
+  const navigateToPage = (page: typeof currentPage) => {
+    if (page !== currentPage) {
+      setIsTransitioning(true)
+      setTimeout(() => {
+        setCurrentPage(page)
+        setIsTransitioning(false)
+      }, 150)
+    }
+  }
+
+  return (
+    <div
+      className="min-h-screen bg-background"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Header with Logo and Page Indicators */}
+      <header className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <Package className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <h1 className="text-xl font-bold text-foreground">Quilar</h1>
         </div>
+
+        {currentPage !== "camera" && (
+          <div className="flex items-center gap-1">
+            {["dashboard", "meals", "storage", "shopping", "calendar"].map((page, index) => (
+              <div
+                key={page}
+                className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                  currentPage === page ? "bg-primary w-6" : "bg-muted"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        <Button variant="outline" size="icon" onClick={() => navigateToPage("camera")} className="rounded-full">
+          <Camera className="w-4 h-4" />
+        </Button>
+      </header>
+
+      {/* Main Content with transition */}
+      <main className={`flex-1 transition-opacity duration-150 ${isTransitioning ? "opacity-50" : "opacity-100"}`}>
+        {renderCurrentPage()}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+      {/* Bottom Navigation */}
+      {currentPage !== "camera" && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+          <div className="flex items-center justify-around p-2">
+            <Button
+              variant={currentPage === "dashboard" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => navigateToPage("dashboard")}
+              className="flex flex-col gap-1 h-auto py-2 transition-all duration-200"
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="text-xs">Dashboard</span>
+            </Button>
+            <Button
+              variant={currentPage === "meals" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => navigateToPage("meals")}
+              className="flex flex-col gap-1 h-auto py-2 transition-all duration-200"
+            >
+              <UtensilsCrossed className="w-4 h-4" />
+              <span className="text-xs">Meals</span>
+            </Button>
+            <Button
+              variant={currentPage === "storage" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => navigateToPage("storage")}
+              className="flex flex-col gap-1 h-auto py-2 transition-all duration-200"
+            >
+              <Package className="w-4 h-4" />
+              <span className="text-xs">Storage</span>
+            </Button>
+            <Button
+              variant={currentPage === "shopping" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => navigateToPage("shopping")}
+              className="flex flex-col gap-1 h-auto py-2 transition-all duration-200"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span className="text-xs">Shopping</span>
+            </Button>
+            <Button
+              variant={currentPage === "calendar" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => navigateToPage("calendar")}
+              className="flex flex-col gap-1 h-auto py-2 transition-all duration-200"
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="text-xs">Calendar</span>
+            </Button>
+          </div>
+        </nav>
+      )}
+
+      {currentPage === "dashboard" && (
+        <div className="fixed bottom-32 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm animate-pulse">
+          Swipe left/right to navigate
+        </div>
+      )}
     </div>
-  );
+  )
 }
