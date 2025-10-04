@@ -4,19 +4,17 @@ import type React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, Package, Camera, Calendar, UtensilsCrossed } from "lucide-react"
-import { MainDashboard } from "@/components/main-dashboard"
+import { ShoppingCart, Package, Camera, UtensilsCrossed } from "lucide-react"
 import { StoragePage } from "@/components/storage-page"
 import { ShoppingListPage } from "@/components/shopping-list-page"
 import { CameraPage } from "@/components/camera-page"
-import { CalendarPage } from "@/components/calendar-page"
 import { MealsPage } from "@/components/meals-page"
 import { FloatingActionButton } from "@/components/floating-action-button"
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<
-    "dashboard" | "storage" | "shopping" | "camera" | "calendar" | "meals"
-  >("dashboard")
+    "storage" | "shopping" | "camera" | "meals"
+  >("meals")
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -40,7 +38,7 @@ export default function Home() {
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
 
-    const pages = ["dashboard", "meals", "storage", "shopping", "calendar", "camera"] as const
+    const pages = ["meals", "storage", "shopping", "camera"] as const
     const currentIndex = pages.indexOf(currentPage)
 
     if (isLeftSwipe && currentIndex < pages.length - 1) {
@@ -61,20 +59,16 @@ export default function Home() {
 
   const renderCurrentPage = () => {
     switch (currentPage) {
-      case "dashboard":
-        return <MainDashboard />
       case "meals":
         return <MealsPage />
       case "storage":
         return <StoragePage />
       case "shopping":
         return <ShoppingListPage />
-      case "calendar":
-        return <CalendarPage />
       case "camera":
-        return <CameraPage onClose={() => setCurrentPage("dashboard")} />
+        return <CameraPage onClose={() => setCurrentPage("meals")} />
       default:
-        return <MainDashboard />
+        return <MealsPage />
     }
   }
 
@@ -106,7 +100,7 @@ export default function Home() {
 
         {currentPage !== "camera" && (
           <div className="flex items-center gap-1">
-            {["dashboard", "meals", "storage", "shopping", "calendar"].map((page, index) => (
+            {["meals", "storage", "shopping"].map((page, index) => (
               <div
                 key={page}
                 className={`w-2 h-2 rounded-full transition-all duration-200 ${
@@ -131,15 +125,6 @@ export default function Home() {
       {currentPage !== "camera" && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-md border-t border-gray-300/30 shadow-lg">
           <div className="flex items-center justify-around p-2">
-            <Button
-              variant={currentPage === "dashboard" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigateToPage("dashboard")}
-              className="flex flex-col gap-1 h-auto py-2 transition-all duration-200"
-            >
-              <Calendar className="w-4 h-4" />
-              <span className="text-xs">Dashboard</span>
-            </Button>
             <Button
               variant={currentPage === "meals" ? "default" : "ghost"}
               size="sm"
@@ -167,24 +152,10 @@ export default function Home() {
               <ShoppingCart className="w-4 h-4" />
               <span className="text-xs">Shopping</span>
             </Button>
-            <Button
-              variant={currentPage === "calendar" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigateToPage("calendar")}
-              className="flex flex-col gap-1 h-auto py-2 transition-all duration-200"
-            >
-              <Calendar className="w-4 h-4" />
-              <span className="text-xs">Calendar</span>
-            </Button>
           </div>
         </nav>
       )}
 
-      {currentPage === "dashboard" && (
-        <div className="fixed bottom-32 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm animate-pulse">
-          Swipe left/right to navigate
-        </div>
-      )}
 
       {/* Floating Action Button */}
       {currentPage !== "camera" && (

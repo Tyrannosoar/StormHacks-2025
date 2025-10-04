@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -26,65 +26,37 @@ interface SavedMeal extends Meal {
 
 export function MealsPage() {
   const [activeTab, setActiveTab] = useState<"saved" | "explore">("explore")
-  const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([
-    {
-      id: "saved-1",
-      title: "Spaghetti Carbonara",
-      image: "/spaghetti-carbonara-pasta-dish.jpg",
-      cookTime: 25,
-      servings: 4,
-      hasAllIngredients: true,
-      ingredients: ["Spaghetti", "Eggs", "Bacon", "Parmesan"],
-      instructions: ["Boil pasta", "Cook bacon", "Mix eggs and cheese", "Combine all"],
-      plannedDate: "2025-01-25",
-      mealType: "dinner",
-    },
-  ])
+  const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([])
+  const [exploreMeals, setExploreMeals] = useState<Meal[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const [exploreMeals] = useState<Meal[]>([
-    {
-      id: "explore-1",
-      title: "Chicken Tikka Masala",
-      image: "/chicken-tikka-masala-curry-dish.jpg",
-      cookTime: 45,
-      servings: 4,
-      hasAllIngredients: false,
-      ingredients: ["Chicken", "Tomatoes", "Cream", "Spices"],
-      instructions: ["Marinate chicken", "Cook sauce", "Combine and simmer"],
-    },
-    {
-      id: "explore-2",
-      title: "Caesar Salad",
-      image: "/caesar-salad-croutons.png",
-      cookTime: 15,
-      servings: 2,
-      hasAllIngredients: true,
-      ingredients: ["Romaine", "Croutons", "Parmesan", "Caesar dressing"],
-      instructions: ["Wash lettuce", "Make dressing", "Toss and serve"],
-    },
-    {
-      id: "explore-3",
-      title: "Beef Stir Fry",
-      image: "/beef-stir-fry.png",
-      cookTime: 20,
-      servings: 3,
-      hasAllIngredients: false,
-      ingredients: ["Beef strips", "Mixed vegetables", "Soy sauce", "Garlic"],
-      instructions: ["Heat wok", "Cook beef", "Add vegetables", "Season and serve"],
-    },
-    {
-      id: "explore-4",
-      title: "Margherita Pizza",
-      image: "/margherita-pizza-basil.png",
-      cookTime: 30,
-      servings: 4,
-      hasAllIngredients: true,
-      ingredients: ["Pizza dough", "Tomato sauce", "Mozzarella", "Basil"],
-      instructions: ["Roll dough", "Add sauce", "Top with cheese", "Bake until golden"],
-    },
-  ])
+  useEffect(() => {
+    const fetchMeals = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/meals')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.data) {
+            // Filter saved meals (those with plannedDate)
+            const saved = data.data.filter((meal: any) => meal.plannedDate)
+            // Filter explore meals (those without plannedDate)
+            const explore = data.data.filter((meal: any) => !meal.plannedDate)
+            setSavedMeals(saved)
+            setExploreMeals(explore)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch meals:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMeals()
+  }, [])
 
   const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showMealDetailModal, setShowMealDetailModal] = useState(false)
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null)
   const [plannedDate, setPlannedDate] = useState("")
   const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner">("dinner")
@@ -92,6 +64,11 @@ export function MealsPage() {
   const handlePlanMeal = (meal: Meal) => {
     setSelectedMeal(meal)
     setShowPlanModal(true)
+  }
+
+  const handleMealClick = (meal: Meal) => {
+    setSelectedMeal(meal)
+    setShowMealDetailModal(true)
   }
 
   const handleArchiveMeal = (meal: Meal) => {
@@ -133,7 +110,10 @@ export function MealsPage() {
   }
 
   const MealCard = ({ meal, isSaved = false }: { meal: Meal | SavedMeal; isSaved?: boolean }) => (
-    <div className="bg-white/5 backdrop-blur-md rounded-xl border-gray-300/20 shadow-lg overflow-hidden">
+    <div 
+      className="bg-white/5 backdrop-blur-md rounded-xl border-gray-300/20 shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200"
+      onClick={() => handleMealClick(meal)}
+    >
       <div className="relative">
         <img 
           src={meal.image || "/placeholder.svg"} 
@@ -188,14 +168,20 @@ export function MealsPage() {
         {!isSaved && (
           <div className="flex gap-2">
             <Button
-              onClick={() => handlePlanMeal(meal)}
+              onClick={(e) => {
+                e.stopPropagation()
+                handlePlanMeal(meal)
+              }}
               className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
             >
               <Calendar className="w-4 h-4" />
               Plan As Meal
             </Button>
             <Button
-              onClick={() => handleArchiveMeal(meal)}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleArchiveMeal(meal)
+              }}
               variant="outline"
               className="px-3 border-border hover:bg-muted"
             >
@@ -229,14 +215,18 @@ export function MealsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 pb-20">
-        {activeTab === "explore" ? (
-          <div className="grid grid-cols-1 gap-4">
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading meals...</p>
+          </div>
+        ) : activeTab === "explore" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {exploreMeals.map((meal) => (
               <MealCard key={meal.id} meal={meal} />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {savedMeals.length > 0 ? (
               savedMeals.map((meal) => <MealCard key={meal.id} meal={meal} isSaved />)
             ) : (
@@ -304,6 +294,109 @@ export function MealsPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Meal Detail Modal */}
+      <Dialog open={showMealDetailModal} onOpenChange={setShowMealDetailModal}>
+        <DialogContent className="max-w-2xl bg-white border-gray-200 shadow-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 text-2xl">{selectedMeal?.title}</DialogTitle>
+          </DialogHeader>
+
+          {selectedMeal && (
+            <div className="space-y-6">
+              {/* Meal Image */}
+              <div className="relative">
+                <img 
+                  src={selectedMeal.image || "/placeholder.svg"} 
+                  alt={selectedMeal.title} 
+                  className="w-full h-64 object-cover rounded-lg"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&crop=center"
+                  }}
+                />
+                <div className="absolute top-4 right-4">
+                  {selectedMeal.hasAllIngredients ? (
+                    <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                      <Check className="w-4 h-4" />
+                      Ready to Cook
+                    </div>
+                  ) : (
+                    <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                      <X className="w-4 h-4" />
+                      Missing Ingredients
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Meal Info */}
+              <div className="flex items-center gap-6 text-gray-600">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  <span className="text-lg">{selectedMeal.cookTime} minutes</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  <span className="text-lg">{selectedMeal.servings} servings</span>
+                </div>
+              </div>
+
+              {/* Ingredients */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Ingredients</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {selectedMeal.ingredients.map((ingredient, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">{ingredient}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cooking Instructions */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Cooking Instructions</h3>
+                <div className="space-y-3">
+                  {selectedMeal.instructions.map((instruction, index) => (
+                    <div key={index} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                        {index + 1}
+                      </div>
+                      <p className="text-gray-800">{instruction}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <Button
+                  onClick={() => {
+                    setShowMealDetailModal(false)
+                    handlePlanMeal(selectedMeal)
+                  }}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Plan This Meal
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowMealDetailModal(false)
+                    handleArchiveMeal(selectedMeal)
+                  }}
+                  variant="outline"
+                  className="px-4 border-border hover:bg-muted flex items-center gap-2"
+                >
+                  <Archive className="w-4 h-4" />
+                  Archive
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
