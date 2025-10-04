@@ -133,9 +133,16 @@ export function MealsPage() {
   }
 
   const MealCard = ({ meal, isSaved = false }: { meal: Meal | SavedMeal; isSaved?: boolean }) => (
-    <div className="bg-card rounded-xl border border-border overflow-hidden">
+    <div className="bg-white/5 backdrop-blur-md rounded-xl border-gray-300/20 shadow-lg overflow-hidden">
       <div className="relative">
-        <img src={meal.image || "/placeholder.svg"} alt={meal.title} className="w-full h-48 object-cover" />
+        <img 
+          src={meal.image || "/placeholder.svg"} 
+          alt={meal.title} 
+          className="w-full h-48 object-cover" 
+          onError={(e) => {
+            e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&crop=center"
+          }}
+        />
         <div className="absolute top-2 right-2">
           {meal.hasAllIngredients ? (
             <div className="bg-emerald-500 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
@@ -151,7 +158,7 @@ export function MealsPage() {
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 bg-white/5 backdrop-blur-sm">
         <h3 className="font-semibold text-foreground mb-2">{meal.title}</h3>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
@@ -243,7 +250,7 @@ export function MealsPage() {
       </div>
 
       <Dialog open={showPlanModal} onOpenChange={setShowPlanModal}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogContent className="sm:max-w-md bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-foreground">Plan Your Meal</DialogTitle>
           </DialogHeader>
@@ -270,7 +277,7 @@ export function MealsPage() {
                 <SelectTrigger className="bg-background border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-card border-border">
+                <SelectContent className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
                   <SelectItem value="breakfast" className="text-foreground hover:bg-muted">
                     Breakfast
                   </SelectItem>

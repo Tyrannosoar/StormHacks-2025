@@ -1,10 +1,14 @@
 // API service functions for communicating with the backend
+import { ApiResponse, ShoppingItem, StorageItem, Meal, CalendarEvent } from './types'
 
 const API_BASE_URL = 'http://localhost:3001/api'
 
 // Generic API call function
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const url = `${API_BASE_URL}${endpoint}`
+  console.log('🌐 Making API call to:', url)
+  
+  const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -12,11 +16,17 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
     ...options,
   })
 
+  console.log('🌐 API response status:', response.status, response.statusText)
+
   if (!response.ok) {
+    const errorText = await response.text()
+    console.error('🌐 API call failed:', response.status, response.statusText, errorText)
     throw new Error(`API call failed: ${response.statusText}`)
   }
 
-  return response.json()
+  const data = await response.json()
+  console.log('🌐 API response data:', data)
+  return data
 }
 
 // Storage API
@@ -32,15 +42,15 @@ export const storageApi = {
 
 // Shopping API
 export const shoppingApi = {
-  getAll: () => apiCall('/shopping'),
-  getById: (id: number) => apiCall(`/shopping/${id}`),
-  create: (data: any) => apiCall('/shopping', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: number, data: any) => apiCall(`/shopping/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id: number) => apiCall(`/shopping/${id}`, { method: 'DELETE' }),
-  toggle: (id: number) => apiCall(`/shopping/${id}/toggle`, { method: 'PUT' }),
-  getByPriority: (priority: string) => apiCall(`/shopping/priority/${priority}`),
-  getByCategory: (category: string) => apiCall(`/shopping/category/${category}`),
-  getCompleted: () => apiCall('/shopping/completed/items'),
+  getAll: (): Promise<ApiResponse<ShoppingItem[]>> => apiCall('/shopping'),
+  getById: (id: number): Promise<ApiResponse<ShoppingItem>> => apiCall(`/shopping/${id}`),
+  create: (data: Omit<ShoppingItem, 'id' | 'isCompleted'>): Promise<ApiResponse<ShoppingItem>> => apiCall('/shopping', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: Partial<ShoppingItem>): Promise<ApiResponse<ShoppingItem>> => apiCall(`/shopping/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: number): Promise<ApiResponse<ShoppingItem>> => apiCall(`/shopping/${id}`, { method: 'DELETE' }),
+  toggle: (id: number): Promise<ApiResponse<ShoppingItem>> => apiCall(`/shopping/${id}/toggle`, { method: 'PUT' }),
+  getByPriority: (priority: string): Promise<ApiResponse<ShoppingItem[]>> => apiCall(`/shopping/priority/${priority}`),
+  getByCategory: (category: string): Promise<ApiResponse<ShoppingItem[]>> => apiCall(`/shopping/category/${category}`),
+  getCompleted: (): Promise<ApiResponse<ShoppingItem[]>> => apiCall('/shopping/completed/items'),
 }
 
 // Meals API

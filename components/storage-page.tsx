@@ -140,7 +140,7 @@ export function StoragePage() {
         const IconComponent = categoryIcons[category as keyof typeof categoryIcons] || Package2
 
         return (
-          <Card key={category} className="bg-card border-border">
+          <Card key={category} className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-card-foreground">
                 <IconComponent className="w-5 h-5 text-primary" />
@@ -208,15 +208,6 @@ export function StoragePage() {
         )
       })}
 
-      <div className="fixed bottom-24 right-4">
-        <Button
-          onClick={() => setShowAddModal(true)}
-          size="lg"
-          className="w-14 h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
-        >
-          <Plus className="w-6 h-6" />
-        </Button>
-      </div>
 
       <AddItemModal
         isOpen={showAddModal}

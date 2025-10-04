@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3001
 // Middleware
 app.use(helmet()) // Security headers
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], // Allow frontend origins
+  origin: ['http://localhost:3000', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3002'], // Allow frontend origins
   credentials: true
 }))
 app.use(morgan('combined')) // Logging

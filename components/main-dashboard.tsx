@@ -53,7 +53,7 @@ export function MainDashboard() {
   return (
     <div className="p-4 pb-20 space-y-6">
       {/* Planned Meals Widget */}
-      <Card className="bg-card border-border">
+      <Card className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-card-foreground">
             <Calendar className="w-5 h-5 text-primary" />
@@ -82,7 +82,7 @@ export function MainDashboard() {
       {/* Bottom Row - Two Widgets Side by Side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Urgent Shopping Items */}
-        <Card className="bg-card border-border">
+        <Card className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-card-foreground text-base">
               <ShoppingCart className="w-4 h-4 text-primary" />
@@ -100,7 +100,7 @@ export function MainDashboard() {
         </Card>
 
         {/* Expiring Items */}
-        <Card className="bg-card border-border">
+        <Card className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-card-foreground text-base">
               <AlertTriangle className="w-4 h-4 text-accent" />
