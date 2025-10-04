@@ -47,3 +47,23 @@ export interface CalendarEvent {
   time: string
   date: string
 }
+
+export interface PlannedMeal {
+  id: number
+  name: string
+  date: string
+  time: string
+}
+
+export interface UrgentShoppingItem {
+  id: number
+  name: string
+  priority: "high" | "medium" | "low"
+}
+
+export interface ExpiringItem {
+  id: number
+  name: string
+  daysLeft: number
+  category: string
+}

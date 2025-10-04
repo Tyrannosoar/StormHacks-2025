@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Milk, Apple, Beef, Coffee, Wheat, Package2, Droplets, Trash2 } from "lucide-react"
 import { AddShoppingItemModal } from "@/components/add-shopping-item-modal"
+import { EditShoppingItemModal } from "@/components/edit-shopping-item-modal"
 import { shoppingApi } from "@/lib/api"
 import { ShoppingItem } from "@/lib/types"
 
@@ -25,6 +26,8 @@ const categoryIcons = {
 
 export function ShoppingListPage() {
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null)
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -103,6 +106,25 @@ export function ShoppingListPage() {
       console.error('Error updating item:', err)
       setError('Failed to update item')
     }
+  }
+
+  const handleItemClick = (item: ShoppingItem) => {
+    setEditingItem(item)
+    setShowEditModal(true)
+  }
+
+  const handleEditSave = (updatedItem: ShoppingItem) => {
+    setShoppingItems((prev) => prev.map((item) => 
+      item.id === updatedItem.id ? updatedItem : item
+    ))
+    setShowEditModal(false)
+    setEditingItem(null)
+  }
+
+  const handleEditDelete = (itemId: number) => {
+    setShoppingItems((prev) => prev.filter((item) => item.id !== itemId))
+    setShowEditModal(false)
+    setEditingItem(null)
   }
 
   const addNewItem = async (newItem: Omit<ShoppingItem, "id" | "isCompleted">) => {
@@ -197,7 +219,17 @@ export function ShoppingListPage() {
     <div className="p-4 pb-20 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Shopping List</h2>
-        <span className="text-sm text-muted-foreground">{activeItems.length} items</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{activeItems.length} items</span>
+          <Button
+            onClick={() => setShowAddModal(true)}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add Item
+          </Button>
+        </div>
       </div>
 
       {categories.map((category) => {
@@ -242,13 +274,22 @@ export function ShoppingListPage() {
                       </div>
 
                       <div
-                        className={`grid grid-cols-12 gap-2 items-center py-2 hover:bg-secondary/50 rounded-lg px-2 -mx-2 transition-all duration-500 bg-card relative ${
+                        className={`grid grid-cols-12 gap-2 items-center py-2 hover:bg-secondary/50 rounded-lg px-2 -mx-2 transition-all duration-500 bg-card relative cursor-pointer ${
                           item.isCompleted ? "opacity-0 transform translate-x-full" : "opacity-100"
                         } ${swipeState.isSwipedLeft ? "transform -translate-x-20" : "transform translate-x-0"}`}
                         onTouchStart={(e) => handleTouchStart(item.id, e)}
                         onTouchMove={(e) => handleTouchMove(item.id, e)}
                         onTouchEnd={() => handleTouchEnd(item.id)}
-                        onClick={() => swipeState.isSwipedLeft && resetSwipe(item.id)}
+                        onClick={(e) => {
+                          if (swipeState.isSwipedLeft) {
+                            resetSwipe(item.id)
+                          } else {
+                            // Only open edit modal if not swiping and not clicking checkbox
+                            if (!(e.target as HTMLElement).closest('input[type="checkbox"]')) {
+                              handleItemClick(item)
+                            }
+                          }
+                        }}
                       >
                         <div className="col-span-1 flex justify-center">
                           <Checkbox
@@ -314,6 +355,14 @@ export function ShoppingListPage() {
         onClose={() => setShowAddModal(false)}
         onAdd={addNewItem}
         categories={categories}
+      />
+
+      <EditShoppingItemModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        item={editingItem}
+        onSave={handleEditSave}
+        onDelete={handleEditDelete}
       />
     </div>
   )

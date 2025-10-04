@@ -4,18 +4,19 @@ import { Button } from "@/components/ui/button"
 import { Calendar, Clock, AlertTriangle, ShoppingCart } from "lucide-react"
 import { dashboardApi } from "@/lib/api"
 import { useState, useEffect } from "react"
+import { PlannedMeal, UrgentShoppingItem, ExpiringItem } from "@/lib/types"
 
 export function MainDashboard() {
-  const [plannedMeals, setPlannedMeals] = useState([])
-  const [urgentShoppingItems, setUrgentShoppingItems] = useState([])
-  const [expiringItems, setExpiringItems] = useState([])
+  const [plannedMeals, setPlannedMeals] = useState<PlannedMeal[]>([])
+  const [urgentShoppingItems, setUrgentShoppingItems] = useState<UrgentShoppingItem[]>([])
+  const [expiringItems, setExpiringItems] = useState<ExpiringItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true)
-        const response = await dashboardApi.getOverview()
+        const response = await dashboardApi.getOverview() as any
         if (response.success && response.data) {
           setPlannedMeals(response.data.plannedMeals || [])
           setUrgentShoppingItems(response.data.urgentShoppingItems || [])
