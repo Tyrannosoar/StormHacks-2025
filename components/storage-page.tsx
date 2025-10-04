@@ -132,7 +132,17 @@ export function StoragePage() {
     <div className="p-4 pb-20 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Storage Overview</h2>
+        <div className="flex items-center gap-3">
         <span className="text-sm text-muted-foreground">{storageItems.length} items</span>
+          <Button
+            onClick={() => setShowAddModal(true)}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+            <Plus className="w-4 h-4 mr-1" />
+            Add Item
+          </Button>
+        </div>
       </div>
 
       {categories.map((category) => {
