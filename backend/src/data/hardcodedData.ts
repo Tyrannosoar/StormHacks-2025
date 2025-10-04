@@ -88,7 +88,7 @@ export const meals: Meal[] = [
     cookTime: 25,
     servings: 4,
     hasAllIngredients: true,
-    ingredients: ["Spaghetti", "Eggs", "Bacon", "Parmesan", "Black Pepper"],
+    ingredients: ["400g Spaghetti", "4 Eggs", "200g Bacon", "100g Parmesan", "1 tsp Black Pepper"],
     instructions: [
       "Boil pasta according to package instructions",
       "Cook bacon until crispy",
@@ -108,7 +108,7 @@ export const meals: Meal[] = [
     cookTime: 20,
     servings: 3,
     hasAllIngredients: true,
-    ingredients: ["Chicken Breast", "Bell Peppers", "Broccoli", "Soy Sauce", "Garlic", "Ginger"],
+    ingredients: ["500g Chicken Breast", "2 Bell Peppers", "200g Broccoli", "3 tbsp Soy Sauce", "3 cloves Garlic", "1 tbsp Ginger"],
     instructions: [
       "Cut chicken into strips",
       "Heat oil in a wok or large pan",
@@ -130,7 +130,7 @@ export const meals: Meal[] = [
     cookTime: 45,
     servings: 4,
     hasAllIngredients: false,
-    ingredients: ["Chicken", "Tomatoes", "Cream", "Spices", "Onions", "Garlic"],
+    ingredients: ["600g Chicken", "400g Tomatoes", "200ml Cream", "2 tbsp Tikka Spices", "2 Onions", "4 cloves Garlic"],
     instructions: [
       "Marinate chicken with yogurt and spices",
       "Cook chicken until golden",
@@ -146,7 +146,7 @@ export const meals: Meal[] = [
     cookTime: 15,
     servings: 2,
     hasAllIngredients: true,
-    ingredients: ["Romaine Lettuce", "Croutons", "Parmesan", "Caesar Dressing", "Lemon"],
+    ingredients: ["2 heads Romaine Lettuce", "100g Croutons", "50g Parmesan", "4 tbsp Caesar Dressing", "1 Lemon"],
     instructions: [
       "Wash and chop romaine lettuce",
       "Make homemade croutons",
@@ -162,7 +162,7 @@ export const meals: Meal[] = [
     cookTime: 20,
     servings: 3,
     hasAllIngredients: false,
-    ingredients: ["Beef Strips", "Mixed Vegetables", "Soy Sauce", "Garlic", "Sesame Oil"],
+    ingredients: ["500g Beef Strips", "300g Mixed Vegetables", "3 tbsp Soy Sauce", "3 cloves Garlic", "1 tbsp Sesame Oil"],
     instructions: [
       "Heat wok or large pan over high heat",
       "Cook beef strips until browned",
@@ -178,7 +178,7 @@ export const meals: Meal[] = [
     cookTime: 30,
     servings: 4,
     hasAllIngredients: true,
-    ingredients: ["Pizza Dough", "Tomato Sauce", "Mozzarella", "Fresh Basil", "Olive Oil"],
+    ingredients: ["500g Pizza Dough", "200ml Tomato Sauce", "200g Mozzarella", "20g Fresh Basil", "2 tbsp Olive Oil"],
     instructions: [
       "Preheat oven to 450°F",
       "Roll out pizza dough",
@@ -195,7 +195,7 @@ export const meals: Meal[] = [
     cookTime: 10,
     servings: 4,
     hasAllIngredients: true,
-    ingredients: ["Tomatoes", "Cucumber", "Red Onion", "Feta Cheese", "Olives", "Olive Oil"],
+    ingredients: ["4 Tomatoes", "2 Cucumbers", "1 Red Onion", "150g Feta Cheese", "100g Olives", "3 tbsp Olive Oil"],
     instructions: [
       "Chop tomatoes and cucumber",
       "Slice red onion thinly",
@@ -211,7 +211,7 @@ export const meals: Meal[] = [
     cookTime: 30,
     servings: 4,
     hasAllIngredients: false,
-    ingredients: ["Chicken Thighs", "Soy Sauce", "Honey", "Garlic", "Ginger", "Rice"],
+    ingredients: ["800g Chicken Thighs", "4 tbsp Soy Sauce", "3 tbsp Honey", "4 cloves Garlic", "2 tbsp Ginger", "300g Rice"],
     instructions: [
       "Marinate chicken in teriyaki sauce",
       "Cook chicken until golden brown",
