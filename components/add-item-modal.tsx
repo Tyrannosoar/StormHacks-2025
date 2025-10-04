@@ -122,7 +122,7 @@ export function AddItemModal({ isOpen, onClose, onAdd, categories }: AddItemModa
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border">
-                {categories.map((category) => (
+                {categories && categories.map((category) => (
                   <SelectItem key={category} value={category} className="text-popover-foreground">
                     {category}
                   </SelectItem>

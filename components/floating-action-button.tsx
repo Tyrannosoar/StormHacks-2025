@@ -14,6 +14,8 @@ export function FloatingActionButton({ currentPage }: FloatingActionButtonProps)
   const [showAddModal, setShowAddModal] = useState(false)
 
   const getModalForPage = () => {
+    if (!showAddModal) return null
+    
     switch (currentPage) {
       case "storage":
         return (
@@ -32,14 +34,8 @@ export function FloatingActionButton({ currentPage }: FloatingActionButtonProps)
             onAdd={() => setShowAddModal(false)}
           />
         )
-      case "calendar":
-        return (
-          <AddEventModal
-            isOpen={showAddModal}
-            onClose={() => setShowAddModal(false)}
-            onAdd={() => setShowAddModal(false)}
-          />
-        )
+      case "meals":
+        return null // Meals page doesn't need an add modal
       default:
         return null
     }
@@ -49,7 +45,10 @@ export function FloatingActionButton({ currentPage }: FloatingActionButtonProps)
     if (isExpanded) {
       setIsExpanded(false)
     } else {
-      setShowAddModal(true)
+      // Only show modal for pages that have add functionality
+      if (currentPage !== "meals") {
+        setShowAddModal(true)
+      }
     }
   }
 
