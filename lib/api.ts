@@ -1,7 +1,7 @@
 // API service functions for communicating with the backend
 import { ApiResponse, ShoppingItem, StorageItem, Meal, CalendarEvent } from './types'
 
-const API_BASE_URL = 'http://localhost:3001/api'
+const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001/api'
 
 // Generic API call function
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

@@ -17,7 +17,10 @@ const PORT = process.env.PORT || 3001
 app.use(helmet()) // Security headers
 app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3002'], // Allow frontend origins
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200
 }))
 app.use(morgan('combined')) // Logging
 app.use(express.json()) // Parse JSON bodies

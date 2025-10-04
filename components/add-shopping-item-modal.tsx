@@ -60,19 +60,19 @@ export function AddShoppingItemModal({ isOpen, onClose, onAdd, categories }: Add
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const allCategories = [
-    ...new Set([...categories, "Dairy", "Vegetables", "Fruits", "Meat", "Beverages", "Grains", "Pantry", "Other"]),
-  ]
+  const allCategories = Array.from(
+    new Set([...categories, "Dairy", "Vegetables", "Fruits", "Meat", "Beverages", "Grains", "Pantry", "Other"])
+  )
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
+      <DialogContent className="bg-white border-gray-200 shadow-xl text-gray-900">
         <DialogHeader>
-          <DialogTitle className="text-card-foreground">Add Shopping Item</DialogTitle>
+          <DialogTitle className="text-gray-900 text-xl">Add Shopping Item</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-card-foreground">
+            <Label htmlFor="name" className="text-gray-700 font-medium">
               Item Name
             </Label>
             <Input
@@ -80,14 +80,14 @@ export function AddShoppingItemModal({ isOpen, onClose, onAdd, categories }: Add
               value={formData.name}
               onChange={(e) => handleInputChange("name", e.target.value)}
               placeholder="e.g., Organic Milk"
-              className="bg-input border-border text-foreground"
+              className="w-full bg-white text-gray-900 border-gray-300"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount" className="text-card-foreground">
+              <Label htmlFor="amount" className="text-gray-700 font-medium">
                 Amount
               </Label>
               <Input
@@ -95,13 +95,13 @@ export function AddShoppingItemModal({ isOpen, onClose, onAdd, categories }: Add
                 value={formData.amount}
                 onChange={(e) => handleInputChange("amount", e.target.value)}
                 placeholder="e.g., 1L, 500g, 6 pcs"
-                className="bg-input border-border text-foreground"
+                className="w-full bg-white text-gray-900 border-gray-300"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="plannedAmount" className="text-card-foreground">
+              <Label htmlFor="plannedAmount" className="text-gray-700 font-medium">
                 Planned Usage
               </Label>
               <Input
@@ -109,23 +109,23 @@ export function AddShoppingItemModal({ isOpen, onClose, onAdd, categories }: Add
                 value={formData.plannedAmount}
                 onChange={(e) => handleInputChange("plannedAmount", e.target.value)}
                 placeholder="e.g., 250ml, 100g"
-                className="bg-input border-border text-foreground"
+                className="w-full bg-white text-gray-900 border-gray-300"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category" className="text-card-foreground">
+              <Label htmlFor="category" className="text-gray-700 font-medium">
                 Category
               </Label>
               <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
-                <SelectTrigger className="bg-input border-border text-foreground">
+                <SelectTrigger className="w-full bg-white text-gray-900 border-gray-300">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
+                <SelectContent className="bg-white border-gray-300">
                   {allCategories.map((category) => (
-                    <SelectItem key={category} value={category} className="text-popover-foreground">
+                    <SelectItem key={category} value={category} className="text-gray-900">
                       {category}
                     </SelectItem>
                   ))}
@@ -134,24 +134,24 @@ export function AddShoppingItemModal({ isOpen, onClose, onAdd, categories }: Add
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="priority" className="text-card-foreground">
+              <Label htmlFor="priority" className="text-gray-700 font-medium">
                 Priority
               </Label>
               <Select
                 value={formData.priority}
                 onValueChange={(value: "high" | "medium" | "low") => handleInputChange("priority", value)}
               >
-                <SelectTrigger className="bg-input border-border text-foreground">
-                  <SelectValue />
+                <SelectTrigger className="w-full bg-white text-gray-900 border-gray-300">
+                  <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  <SelectItem value="high" className="text-popover-foreground">
+                <SelectContent className="bg-white border-gray-300">
+                  <SelectItem value="high" className="text-gray-900">
                     High
                   </SelectItem>
-                  <SelectItem value="medium" className="text-popover-foreground">
+                  <SelectItem value="medium" className="text-gray-900">
                     Medium
                   </SelectItem>
-                  <SelectItem value="low" className="text-popover-foreground">
+                  <SelectItem value="low" className="text-gray-900">
                     Low
                   </SelectItem>
                 </SelectContent>

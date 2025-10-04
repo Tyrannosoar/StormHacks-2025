@@ -36,6 +36,7 @@ export function FloatingActionButton({ currentPage, onNavigate }: FloatingAction
             isOpen={showAddModal}
             onClose={() => setShowAddModal(false)}
             onAdd={() => setShowAddModal(false)}
+            categories={["Dairy", "Fruits", "Vegetables", "Meat", "Beverages", "Grains", "Pantry", "Other"]}
           />
         )
       case "meals":
@@ -50,7 +51,7 @@ export function FloatingActionButton({ currentPage, onNavigate }: FloatingAction
           <AddEventModal
             isOpen={showAddModal}
             onClose={() => setShowAddModal(false)}
-            onAdd={() => setShowAddModal(false)}
+            onAddEvent={() => setShowAddModal(false)}
           />
         )
       default:
