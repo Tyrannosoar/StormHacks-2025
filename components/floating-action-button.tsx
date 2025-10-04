@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import { AddItemModal } from "@/components/add-item-modal"
 import { AddShoppingItemModal } from "@/components/add-shopping-item-modal"
 import { AddEventModal } from "@/components/add-event-modal"
+import { VoiceMealAssistantModal } from "./voice-meal-assistant-modal"
 
 interface FloatingActionButtonProps {
   currentPage: string
@@ -31,6 +32,13 @@ export function FloatingActionButton({ currentPage }: FloatingActionButtonProps)
             onClose={() => setShowAddModal(false)}
             onAdd={() => setShowAddModal(false)}
           />
+        )
+      case "meals":
+         return (
+        <VoiceMealAssistantModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+        />
         )
       case "calendar":
         return (
