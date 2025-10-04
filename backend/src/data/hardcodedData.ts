@@ -32,6 +32,19 @@ export const storageItems: StorageItem[] = [
   // Beverages
   { id: 18, name: "Orange Juice", amount: "1L", expiryDays: 6, plannedAmount: "250ml", category: "Beverages" },
   { id: 19, name: "Coffee Beans", amount: "250g", expiryDays: 90, plannedAmount: "50g", category: "Beverages" },
+  { id: 20, name: "Green Tea", amount: "100 bags", expiryDays: 365, plannedAmount: "5 bags", category: "Beverages" },
+  { id: 21, name: "Coconut Water", amount: "1L", expiryDays: 7, plannedAmount: "250ml", category: "Beverages" },
+
+  // Additional Pantry Items
+  { id: 22, name: "Flour", amount: "1kg", expiryDays: 180, plannedAmount: "200g", category: "Pantry" },
+  { id: 23, name: "Sugar", amount: "500g", expiryDays: 730, plannedAmount: "50g", category: "Pantry" },
+  { id: 24, name: "Salt", amount: "200g", expiryDays: 1095, plannedAmount: "10g", category: "Pantry" },
+  { id: 25, name: "Black Pepper", amount: "50g", expiryDays: 365, plannedAmount: "5g", category: "Pantry" },
+  { id: 26, name: "Garlic", amount: "1 bulb", expiryDays: 14, plannedAmount: "3 cloves", category: "Vegetables" },
+  { id: 27, name: "Ginger", amount: "100g", expiryDays: 21, plannedAmount: "20g", category: "Vegetables" },
+  { id: 28, name: "Lemons", amount: "4 pcs", expiryDays: 10, plannedAmount: "1 pc", category: "Fruits" },
+  { id: 29, name: "Limes", amount: "6 pcs", expiryDays: 7, plannedAmount: "2 pcs", category: "Fruits" },
+  { id: 30, name: "Avocados", amount: "3 pcs", expiryDays: 5, plannedAmount: "1 pc", category: "Fruits" },
 ]
 
 // Hardcoded shopping items
@@ -41,18 +54,28 @@ export const shoppingItems: ShoppingItem[] = [
   { id: 2, name: "Bread", amount: "1 loaf", plannedAmount: "1 loaf", category: "Grains", priority: "high", isCompleted: false },
   { id: 3, name: "Eggs", amount: "12 pcs", plannedAmount: "12 pcs", category: "Dairy", priority: "high", isCompleted: false },
   { id: 4, name: "Butter", amount: "250g", plannedAmount: "250g", category: "Dairy", priority: "high", isCompleted: false },
+  { id: 5, name: "Cheese", amount: "200g", plannedAmount: "200g", category: "Dairy", priority: "high", isCompleted: false },
+  { id: 6, name: "Ground Beef", amount: "500g", plannedAmount: "500g", category: "Meat", priority: "high", isCompleted: false },
 
   // Medium Priority
-  { id: 5, name: "Tomatoes", amount: "6 pcs", plannedAmount: "4 pcs", category: "Vegetables", priority: "medium", isCompleted: false },
-  { id: 6, name: "Chicken Breast", amount: "800g", plannedAmount: "600g", category: "Meat", priority: "medium", isCompleted: false },
-  { id: 7, name: "Greek Yogurt", amount: "500g", plannedAmount: "300g", category: "Dairy", priority: "medium", isCompleted: false },
-  { id: 8, name: "Onions", amount: "1kg", plannedAmount: "500g", category: "Vegetables", priority: "medium", isCompleted: false },
+  { id: 7, name: "Tomatoes", amount: "6 pcs", plannedAmount: "4 pcs", category: "Vegetables", priority: "medium", isCompleted: false },
+  { id: 8, name: "Chicken Breast", amount: "800g", plannedAmount: "600g", category: "Meat", priority: "medium", isCompleted: false },
+  { id: 9, name: "Greek Yogurt", amount: "500g", plannedAmount: "300g", category: "Dairy", priority: "medium", isCompleted: false },
+  { id: 10, name: "Onions", amount: "1kg", plannedAmount: "500g", category: "Vegetables", priority: "medium", isCompleted: false },
+  { id: 11, name: "Bell Peppers", amount: "3 pcs", plannedAmount: "2 pcs", category: "Vegetables", priority: "medium", isCompleted: false },
+  { id: 12, name: "Salmon", amount: "600g", plannedAmount: "400g", category: "Meat", priority: "medium", isCompleted: false },
+  { id: 13, name: "Apples", amount: "6 pcs", plannedAmount: "4 pcs", category: "Fruits", priority: "medium", isCompleted: false },
+  { id: 14, name: "Orange Juice", amount: "1L", plannedAmount: "750ml", category: "Beverages", priority: "medium", isCompleted: false },
 
   // Low Priority
-  { id: 9, name: "Olive Oil", amount: "500ml", plannedAmount: "250ml", category: "Pantry", priority: "low", isCompleted: false },
-  { id: 10, name: "Bananas", amount: "6 pcs", plannedAmount: "4 pcs", category: "Fruits", priority: "low", isCompleted: false },
-  { id: 11, name: "Rice", amount: "1kg", plannedAmount: "500g", category: "Grains", priority: "low", isCompleted: false },
-  { id: 12, name: "Spices", amount: "Assorted", plannedAmount: "As needed", category: "Pantry", priority: "low", isCompleted: false },
+  { id: 15, name: "Olive Oil", amount: "500ml", plannedAmount: "250ml", category: "Pantry", priority: "low", isCompleted: false },
+  { id: 16, name: "Bananas", amount: "6 pcs", plannedAmount: "4 pcs", category: "Fruits", priority: "low", isCompleted: false },
+  { id: 17, name: "Rice", amount: "1kg", plannedAmount: "500g", category: "Grains", priority: "low", isCompleted: false },
+  { id: 18, name: "Spices", amount: "Assorted", plannedAmount: "As needed", category: "Pantry", priority: "low", isCompleted: false },
+  { id: 19, name: "Pasta", amount: "500g", plannedAmount: "300g", category: "Grains", priority: "low", isCompleted: false },
+  { id: 20, name: "Coffee Beans", amount: "250g", plannedAmount: "200g", category: "Beverages", priority: "low", isCompleted: false },
+  { id: 21, name: "Frozen Vegetables", amount: "1kg", plannedAmount: "500g", category: "Vegetables", priority: "low", isCompleted: false },
+  { id: 22, name: "Cereal", amount: "500g", plannedAmount: "300g", category: "Grains", priority: "low", isCompleted: false },
 ]
 
 // Hardcoded meals
@@ -61,7 +84,7 @@ export const meals: Meal[] = [
   {
     id: "saved-1",
     title: "Spaghetti Carbonara",
-    image: "/spaghetti-carbonara-pasta-dish.jpg",
+    image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop&crop=center",
     cookTime: 25,
     servings: 4,
     hasAllIngredients: true,
@@ -81,7 +104,7 @@ export const meals: Meal[] = [
   {
     id: "saved-2",
     title: "Chicken Stir Fry",
-    image: "/chicken-stir-fry.png",
+    image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop&crop=center",
     cookTime: 20,
     servings: 3,
     hasAllIngredients: true,
@@ -103,7 +126,7 @@ export const meals: Meal[] = [
   {
     id: "explore-1",
     title: "Chicken Tikka Masala",
-    image: "/chicken-tikka-masala-curry-dish.jpg",
+    image: "https://images.unsplash.com/photo-1585937421612-70a0084f8f05?w=400&h=300&fit=crop&crop=center",
     cookTime: 45,
     servings: 4,
     hasAllIngredients: false,
@@ -119,7 +142,7 @@ export const meals: Meal[] = [
   {
     id: "explore-2",
     title: "Caesar Salad",
-    image: "/caesar-salad-croutons.png",
+    image: "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&h=300&fit=crop&crop=center",
     cookTime: 15,
     servings: 2,
     hasAllIngredients: true,
@@ -135,7 +158,7 @@ export const meals: Meal[] = [
   {
     id: "explore-3",
     title: "Beef Stir Fry",
-    image: "/beef-stir-fry.png",
+    image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400&h=300&fit=crop&crop=center",
     cookTime: 20,
     servings: 3,
     hasAllIngredients: false,
@@ -151,7 +174,7 @@ export const meals: Meal[] = [
   {
     id: "explore-4",
     title: "Margherita Pizza",
-    image: "/margherita-pizza-basil.png",
+    image: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=400&h=300&fit=crop&crop=center",
     cookTime: 30,
     servings: 4,
     hasAllIngredients: true,
@@ -168,7 +191,7 @@ export const meals: Meal[] = [
   {
     id: "explore-5",
     title: "Greek Salad",
-    image: "/greek-salad.jpg",
+    image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=300&fit=crop&crop=center",
     cookTime: 10,
     servings: 4,
     hasAllIngredients: true,
@@ -179,6 +202,54 @@ export const meals: Meal[] = [
       "Combine vegetables in a bowl",
       "Add feta cheese and olives",
       "Drizzle with olive oil and season"
+    ]
+  },
+  {
+    id: "explore-6",
+    title: "Chicken Teriyaki",
+    image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400&h=300&fit=crop&crop=center",
+    cookTime: 30,
+    servings: 4,
+    hasAllIngredients: false,
+    ingredients: ["Chicken Thighs", "Soy Sauce", "Honey", "Garlic", "Ginger", "Rice"],
+    instructions: [
+      "Marinate chicken in teriyaki sauce",
+      "Cook chicken until golden brown",
+      "Make teriyaki sauce with soy sauce and honey",
+      "Simmer chicken in sauce",
+      "Serve over rice"
+    ]
+  },
+  {
+    id: "explore-7",
+    title: "Vegetable Stir Fry",
+    image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop&crop=center",
+    cookTime: 15,
+    servings: 3,
+    hasAllIngredients: true,
+    ingredients: ["Mixed Vegetables", "Soy Sauce", "Garlic", "Sesame Oil", "Rice"],
+    instructions: [
+      "Heat oil in wok",
+      "Add garlic and stir-fry",
+      "Add mixed vegetables",
+      "Season with soy sauce",
+      "Serve over rice"
+    ]
+  },
+  {
+    id: "explore-8",
+    title: "Pasta Aglio e Olio",
+    image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop&crop=center",
+    cookTime: 20,
+    servings: 2,
+    hasAllIngredients: true,
+    ingredients: ["Spaghetti", "Garlic", "Olive Oil", "Red Pepper Flakes", "Parsley"],
+    instructions: [
+      "Boil pasta until al dente",
+      "Heat olive oil with garlic",
+      "Add red pepper flakes",
+      "Toss pasta with oil mixture",
+      "Garnish with parsley"
     ]
   }
 ]
@@ -194,7 +265,14 @@ export const calendarEvents: CalendarEvent[] = [
   { id: "7", title: "Dinner Party", type: "custom", time: "18:00", date: "2025-01-30" },
   { id: "8", title: "Breakfast: Pancakes", type: "meal", time: "09:00", date: "2025-01-23" },
   { id: "9", title: "Lunch: Caesar Salad", type: "meal", time: "13:00", date: "2025-01-24" },
-  { id: "10", title: "Farmers Market", type: "shopping", time: "08:00", date: "2025-01-26" }
+  { id: "10", title: "Farmers Market", type: "shopping", time: "08:00", date: "2025-01-26" },
+  { id: "11", title: "Dinner: Chicken Teriyaki", type: "meal", time: "19:30", date: "2025-01-27" },
+  { id: "12", title: "Bulk Shopping", type: "shopping", time: "14:00", date: "2025-01-28" },
+  { id: "13", title: "Lunch: Pasta Aglio e Olio", type: "meal", time: "12:30", date: "2025-01-29" },
+  { id: "14", title: "Meal Prep Session", type: "custom", time: "16:00", date: "2025-01-30" },
+  { id: "15", title: "Breakfast: Avocado Toast", type: "meal", time: "08:30", date: "2025-01-31" },
+  { id: "16", title: "Dinner: Vegetable Stir Fry", type: "meal", time: "18:45", date: "2025-02-01" },
+  { id: "17", title: "Weekend Grocery Run", type: "shopping", time: "10:00", date: "2025-02-02" }
 ]
 
 // Dashboard data
@@ -203,15 +281,22 @@ export const plannedMeals: PlannedMeal[] = [
   { id: 2, name: "Chicken Stir Fry", date: "Tomorrow", time: "6:30 PM" },
   { id: 3, name: "Greek Salad", date: "Wednesday", time: "12:30 PM" },
   { id: 4, name: "Beef Stir Fry", date: "Thursday", time: "7:30 PM" },
-  { id: 5, name: "Margherita Pizza", date: "Friday", time: "6:00 PM" }
+  { id: 5, name: "Margherita Pizza", date: "Friday", time: "6:00 PM" },
+  { id: 6, name: "Chicken Teriyaki", date: "Saturday", time: "7:00 PM" },
+  { id: 7, name: "Pasta Aglio e Olio", date: "Sunday", time: "6:30 PM" }
 ]
 
 export const urgentShoppingItems: UrgentShoppingItem[] = [
   { id: 1, name: "Milk", priority: "high" },
   { id: 2, name: "Bread", priority: "high" },
   { id: 3, name: "Eggs", priority: "high" },
-  { id: 4, name: "Tomatoes", priority: "medium" },
-  { id: 5, name: "Olive Oil", priority: "low" }
+  { id: 4, name: "Cheese", priority: "high" },
+  { id: 5, name: "Ground Beef", priority: "high" },
+  { id: 6, name: "Tomatoes", priority: "medium" },
+  { id: 7, name: "Chicken Breast", priority: "medium" },
+  { id: 8, name: "Greek Yogurt", priority: "medium" },
+  { id: 9, name: "Olive Oil", priority: "low" },
+  { id: 10, name: "Bananas", priority: "low" }
 ]
 
 export const expiringItems: ExpiringItem[] = [
@@ -219,5 +304,10 @@ export const expiringItems: ExpiringItem[] = [
   { id: 2, name: "Spinach", daysLeft: 2, category: "Vegetables" },
   { id: 3, name: "Chicken Breast", daysLeft: 3, category: "Meat" },
   { id: 4, name: "Strawberries", daysLeft: 3, category: "Fruits" },
-  { id: 5, name: "Mozzarella", daysLeft: 4, category: "Dairy" }
+  { id: 5, name: "Mozzarella", daysLeft: 4, category: "Dairy" },
+  { id: 6, name: "Avocados", daysLeft: 5, category: "Fruits" },
+  { id: 7, name: "Limes", daysLeft: 7, category: "Fruits" },
+  { id: 8, name: "Coconut Water", daysLeft: 7, category: "Beverages" },
+  { id: 9, name: "Orange Juice", daysLeft: 6, category: "Beverages" },
+  { id: 10, name: "Garlic", daysLeft: 14, category: "Vegetables" }
 ]

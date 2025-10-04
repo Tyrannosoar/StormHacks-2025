@@ -62,7 +62,7 @@ export function AddItemModal({ isOpen, onClose, onAdd, categories }: AddItemModa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border">
+      <DialogContent className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
         <DialogHeader>
           <DialogTitle className="text-card-foreground">Add New Item</DialogTitle>
         </DialogHeader>

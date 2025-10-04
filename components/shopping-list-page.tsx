@@ -10,16 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Milk, Apple, Beef, Coffee, Wheat, Package2, Droplets, Trash2 } from "lucide-react"
 import { AddShoppingItemModal } from "@/components/add-shopping-item-modal"
 import { shoppingApi } from "@/lib/api"
-
-interface ShoppingItem {
-  id: number
-  name: string
-  amount: string
-  plannedAmount: string
-  category: string
-  priority: "high" | "medium" | "low"
-  isCompleted: boolean
-}
+import { ShoppingItem } from "@/lib/types"
 
 const categoryIcons = {
   Dairy: Milk,
@@ -48,13 +39,21 @@ export function ShoppingListPage() {
     const loadShoppingItems = async () => {
       try {
         setLoading(true)
+        setError(null)
+        console.log('🛒 Loading shopping items...')
         const response = await shoppingApi.getAll()
+        console.log('🛒 API Response:', response)
+        
         if (response.success && response.data) {
           setShoppingItems(response.data)
+          console.log('🛒 Shopping items loaded successfully:', response.data.length, 'items')
+        } else {
+          setError('Invalid response from server')
+          console.error('🛒 Invalid response:', response)
         }
       } catch (err) {
         setError('Failed to load shopping items')
-        console.error('Error loading shopping items:', err)
+        console.error('🛒 Error loading shopping items:', err)
       } finally {
         setLoading(false)
       }
@@ -89,12 +88,12 @@ export function ShoppingListPage() {
       if (response.success && response.data) {
         // Update local state with the response from API
         setShoppingItems((prev) => prev.map((item) => 
-          item.id === itemId ? response.data : item
+          item.id === itemId ? response.data! : item
         ))
         
         // If item is now completed, add to completed items
         if (response.data.isCompleted) {
-          setCompletedItems((prev) => [...prev, response.data])
+          setCompletedItems((prev) => [...prev, response.data!])
           setTimeout(() => {
             setShoppingItems((prev) => prev.filter((item) => item.id !== itemId))
           }, 500)
@@ -110,7 +109,7 @@ export function ShoppingListPage() {
     try {
       const response = await shoppingApi.create(newItem)
       if (response.success && response.data) {
-        setShoppingItems((prev) => [...prev, response.data])
+        setShoppingItems((prev) => [...prev, response.data!])
       }
     } catch (err) {
       console.error('Error adding item:', err)
@@ -165,7 +164,7 @@ export function ShoppingListPage() {
   if (loading) {
     return (
       <div className="flex flex-col h-full bg-background">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-4 bg-white/5 backdrop-blur-md border-b border-gray-300/20">
           <h2 className="text-xl font-semibold text-foreground">Shopping List</h2>
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -181,7 +180,7 @@ export function ShoppingListPage() {
   if (error) {
     return (
       <div className="flex flex-col h-full bg-background">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-4 bg-white/5 backdrop-blur-md border-b border-gray-300/20">
           <h2 className="text-xl font-semibold text-foreground">Shopping List</h2>
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -206,7 +205,7 @@ export function ShoppingListPage() {
         const IconComponent = categoryIcons[category as keyof typeof categoryIcons] || Package2
 
         return (
-          <Card key={category} className="bg-card border-border">
+          <Card key={category} className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-card-foreground">
                 <IconComponent className="w-5 h-5 text-primary" />
@@ -285,7 +284,7 @@ export function ShoppingListPage() {
       })}
 
       {activeItems.length === 0 && (
-        <Card className="bg-card border-border">
+        <Card className="bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
           <CardContent className="py-12 text-center">
             <Package2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-card-foreground mb-2">Shopping list is empty</h3>

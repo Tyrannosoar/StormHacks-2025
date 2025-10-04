@@ -169,7 +169,7 @@ export function CalendarPage() {
 
       {/* Calendar Grid */}
       <div className="flex-1 p-4 pb-20" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-        <Card className="p-4 bg-card border-border">
+        <Card className="p-4 bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
           <div className="grid grid-cols-7 gap-2 mb-4">
             {dayNames.map((day, index) => (
               <div key={day} className="text-center">

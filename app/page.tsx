@@ -11,6 +11,7 @@ import { ShoppingListPage } from "@/components/shopping-list-page"
 import { CameraPage } from "@/components/camera-page"
 import { CalendarPage } from "@/components/calendar-page"
 import { MealsPage } from "@/components/meals-page"
+import { FloatingActionButton } from "@/components/floating-action-button"
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<
@@ -95,7 +96,7 @@ export default function Home() {
       onTouchEnd={onTouchEnd}
     >
       {/* Header with Logo and Page Indicators */}
-      <header className="flex items-center justify-between p-4 border-b border-border">
+      <header className="flex items-center justify-between p-4 bg-white/5 backdrop-blur-md border-b border-gray-300/20">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <Package className="w-5 h-5 text-primary-foreground" />
@@ -128,7 +129,7 @@ export default function Home() {
 
       {/* Bottom Navigation */}
       {currentPage !== "camera" && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-md border-t border-gray-300/30 shadow-lg">
           <div className="flex items-center justify-around p-2">
             <Button
               variant={currentPage === "dashboard" ? "default" : "ghost"}
@@ -183,6 +184,11 @@ export default function Home() {
         <div className="fixed bottom-32 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm animate-pulse">
           Swipe left/right to navigate
         </div>
+      )}
+
+      {/* Floating Action Button */}
+      {currentPage !== "camera" && (
+        <FloatingActionButton currentPage={currentPage} />
       )}
     </div>
   )

@@ -64,7 +64,7 @@ export function AddEventModal({ isOpen, onClose, onAddEvent }: AddEventModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+      <DialogContent className="sm:max-w-md bg-white/5 backdrop-blur-md border-gray-300/20 shadow-lg">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-foreground">Add New Event</DialogTitle>
