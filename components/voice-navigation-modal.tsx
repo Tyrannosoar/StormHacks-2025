@@ -295,7 +295,14 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       }
 
       const data = await response.json();
-      console.log('Local Whisper response:', data);
+      console.log('Backend response:', data);
+      
+      // Check if the response indicates we should use fallback
+      if (data.fallback) {
+        setTranscript(`🔄 ${data.message || 'Using browser speech recognition...'}`);
+        await fallbackToBrowserSpeech();
+        return;
+      }
       
       const text = data.text?.toLowerCase() || '';
       
