@@ -46,13 +46,8 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       setIsActive(true);
       setTranscript("🎤 Voice agent activated. I'm listening...");
       
-      // In production, use browser speech recognition directly
-      if (process.env.NODE_ENV === 'production') {
-        await fallbackToBrowserSpeech();
-      } else {
-        // In development, try local Whisper first
-        await startContinuousListening();
-      }
+      // Always use the backend API for voice recognition
+      await startContinuousListening();
       
     } catch (error) {
       console.error("Error accessing microphone:", error);
@@ -286,9 +281,17 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Local Whisper error:', errorData);
-        setTranscript(`❌ Local Whisper Error: ${errorData.error || 'Unknown error'}. Check server logs.`);
-        return;
+        console.error('Backend Whisper error:', errorData);
+        
+        if (errorData.fallback) {
+          setTranscript(`🔄 Backend Whisper not available. Using browser speech recognition...`);
+          await fallbackToBrowserSpeech();
+          return;
+        } else {
+          setTranscript(`❌ Backend Error: ${errorData.error || 'Unknown error'}. Using browser speech recognition...`);
+          await fallbackToBrowserSpeech();
+          return;
+        }
       }
 
       const data = await response.json();
@@ -327,15 +330,15 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
   };
 
   const fallbackToBrowserSpeech = async () => {
-    // Check for browser speech recognition support
+    // Use browser speech recognition as fallback when backend API fails
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-      setTranscript("❌ Browser speech recognition not supported. Please use manual navigation buttons.");
+      setTranscript("❌ Speech recognition not supported. Please use manual navigation buttons.");
       return;
     }
 
-    setTranscript("🎤 Using browser speech recognition...");
+    setTranscript("🎤 Using browser speech recognition as fallback...");
 
     try {
       const recognition = new SpeechRecognition();
