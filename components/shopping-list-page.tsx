@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Milk, Apple, Beef, Coffee, Wheat, Package2, Droplets, Trash2 } from "lucide-react"
 import { AddShoppingItemModal } from "@/components/add-shopping-item-modal"
 import { EditShoppingItemModal } from "@/components/edit-shopping-item-modal"
-import { shoppingApi } from "@/lib/api"
+import { supabaseShoppingApi } from "@/lib/supabase-api"
 import { ShoppingItem } from "@/lib/types"
 
 const categoryIcons = {
@@ -36,6 +36,7 @@ export function ShoppingListPage() {
   const [swipeStates, setSwipeStates] = useState<Record<number, { isSwipedLeft: boolean; touchStartX: number | null }>>(
     {},
   )
+  const [movingToStorage, setMovingToStorage] = useState<Set<number>>(new Set())
 
   // Load shopping items from API
   useEffect(() => {
@@ -44,7 +45,7 @@ export function ShoppingListPage() {
         setLoading(true)
         setError(null)
         console.log('🛒 Loading shopping items...')
-        const response = await shoppingApi.getAll()
+        const response = await supabaseShoppingApi.getAll()
         console.log('🛒 API Response:', response)
         
         if (response.success && response.data) {
@@ -87,22 +88,79 @@ export function ShoppingListPage() {
 
     try {
       // Update the item completion status via API
-      const response = await shoppingApi.toggle(itemId)
+      const response = await supabaseShoppingApi.toggle(itemId)
       if (response.success && response.data) {
         // Update local state with the response from API
         setShoppingItems((prev) => prev.map((item) => 
           item.id === itemId ? response.data! : item
         ))
         
-        // If item is now completed, add to completed items and show success message
+        // If item is now completed, move it to storage
         if (response.data.isCompleted) {
-          setCompletedItems((prev) => [...prev, response.data!])
-          console.log('✅ Item completed and added to storage:', response.data.name)
-          // Show success message
-          alert(`✅ ${response.data.name} completed and added to storage!`)
-          setTimeout(() => {
-            setShoppingItems((prev) => prev.filter((item) => item.id !== itemId))
-          }, 500)
+          setMovingToStorage(prev => new Set(prev).add(itemId))
+          try {
+            // Add to storage with default expiry days based on category
+            const getDefaultExpiryDays = (category: string) => {
+              switch (category.toLowerCase()) {
+                case 'dairy': return 7
+                case 'meat': return 3
+                case 'vegetables': return 5
+                case 'fruits': return 4
+                case 'beverages': return 30
+                case 'grains': return 180
+                case 'pantry': return 365
+                default: return 7
+              }
+            }
+
+            const { supabaseStorageApi } = await import('@/lib/supabase-api')
+            const storageItem = {
+              name: response.data.name,
+              amount: response.data.amount,
+              expiryDays: getDefaultExpiryDays(response.data.category),
+              plannedAmount: response.data.plannedAmount,
+              category: response.data.category
+            }
+
+            const storageResponse = await supabaseStorageApi.create(storageItem)
+            
+            if (storageResponse.success) {
+              // Add to completed items for display
+              setCompletedItems((prev) => [...prev, response.data!])
+              console.log('✅ Item completed and moved to storage:', response.data.name)
+              
+              // Show success message with better UX
+              const successMessage = `✅ ${response.data.name} completed and moved to storage!`
+              console.log(successMessage)
+              
+              // Show a toast-like notification instead of alert
+              const notification = document.createElement('div')
+              notification.textContent = successMessage
+              notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50'
+              document.body.appendChild(notification)
+              
+              // Remove notification after 3 seconds
+              setTimeout(() => {
+                document.body.removeChild(notification)
+              }, 3000)
+              
+              // Remove from shopping list after a short delay
+              setTimeout(() => {
+                setShoppingItems((prev) => prev.filter((item) => item.id !== itemId))
+                setMovingToStorage(prev => {
+                  const newSet = new Set(prev)
+                  newSet.delete(itemId)
+                  return newSet
+                })
+              }, 1000)
+            } else {
+              console.error('Failed to add to storage:', storageResponse.error)
+              alert(`❌ Failed to move ${response.data.name} to storage`)
+            }
+          } catch (storageError) {
+            console.error('Error adding to storage:', storageError)
+            alert(`❌ Error moving ${response.data.name} to storage`)
+          }
         }
       }
     } catch (err) {
@@ -132,7 +190,7 @@ export function ShoppingListPage() {
 
   const addNewItem = async (newItem: Omit<ShoppingItem, "id" | "isCompleted">) => {
     try {
-      const response = await shoppingApi.create(newItem)
+      const response = await supabaseShoppingApi.create(newItem)
       if (response.success && response.data) {
         setShoppingItems((prev) => [...prev, response.data!])
       }
@@ -170,13 +228,38 @@ export function ShoppingListPage() {
     }))
   }
 
-  const deleteItem = (itemId: number) => {
-    setShoppingItems((prev) => prev.filter((item) => item.id !== itemId))
-    setSwipeStates((prev) => {
-      const newState = { ...prev }
-      delete newState[itemId]
-      return newState
-    })
+  const deleteItem = async (itemId: number) => {
+    try {
+      console.log('🗑️ Deleting shopping item:', itemId)
+      const response = await supabaseShoppingApi.delete(itemId)
+      
+      if (response.success) {
+        // Update local state only after successful API call
+        setShoppingItems((prev) => prev.filter((item) => item.id !== itemId))
+        setSwipeStates((prev) => {
+          const newState = { ...prev }
+          delete newState[itemId]
+          return newState
+        })
+        console.log('✅ Shopping item deleted successfully')
+        
+        // Show success notification
+        const notification = document.createElement('div')
+        notification.textContent = '✅ Item deleted successfully'
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50'
+        document.body.appendChild(notification)
+        
+        setTimeout(() => {
+          document.body.removeChild(notification)
+        }, 3000)
+      } else {
+        console.error('❌ Failed to delete shopping item:', response.error)
+        alert(`❌ Failed to delete item: ${response.error}`)
+      }
+    } catch (err) {
+      console.error('❌ Error deleting shopping item:', err)
+      alert('❌ Error deleting item')
+    }
   }
 
   const resetSwipe = (itemId: number) => {
@@ -288,7 +371,13 @@ export function ShoppingListPage() {
                             resetSwipe(item.id)
                           } else {
                             // Only open edit modal if not swiping and not clicking checkbox
-                            if (!(e.target as HTMLElement).closest('input[type="checkbox"]')) {
+                            const target = e.target as HTMLElement
+                            const isCheckbox = target.closest('input[type="checkbox"]') || 
+                                             target.closest('[role="checkbox"]') ||
+                                             target.closest('.checkbox') ||
+                                             target.tagName === 'INPUT'
+                            
+                            if (!isCheckbox) {
                               handleItemClick(item)
                             }
                           }
@@ -298,6 +387,7 @@ export function ShoppingListPage() {
                           <Checkbox
                             checked={item.isCompleted}
                             onCheckedChange={() => handleItemCheck(item.id)}
+                            onClick={(e) => e.stopPropagation()}
                             className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                           />
                         </div>
@@ -306,6 +396,11 @@ export function ShoppingListPage() {
                             className={`text-sm font-medium ${item.isCompleted ? "line-through text-muted-foreground" : "text-card-foreground"}`}
                           >
                             {item.name}
+                            {movingToStorage.has(item.id) && (
+                              <span className="ml-2 text-xs text-green-500 animate-pulse">
+                                📦 Moving to storage...
+                              </span>
+                            )}
                           </span>
                         </div>
                         <div className="col-span-2 text-center">

@@ -3,7 +3,6 @@
 import React, { useState } from "react"
 import { AddItemModal } from "@/components/add-item-modal"
 import { AddShoppingItemModal } from "@/components/add-shopping-item-modal"
-import { AddEventModal } from "@/components/add-event-modal"
 import { VoiceMealAssistantModal } from "./voice-meal-assistant-modal"
 import { VoiceNavigationModal } from "./voice-navigation-modal"
 
@@ -45,14 +44,6 @@ export function FloatingActionButton({ currentPage, onNavigate }: FloatingAction
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
         />
-        )
-      case "calendar":
-        return (
-          <AddEventModal
-            isOpen={showAddModal}
-            onClose={() => setShowAddModal(false)}
-            onAddEvent={() => setShowAddModal(false)}
-          />
         )
       default:
         return null

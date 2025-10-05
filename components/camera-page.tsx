@@ -125,7 +125,7 @@ export function CameraPage({ onClose }: CameraPageProps) {
 
       // Send to OCR API with timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout (longer than server)
 
       const ocrResponse = await fetch('/api/ocr', {
         method: 'POST',
@@ -262,21 +262,6 @@ export function CameraPage({ onClose }: CameraPageProps) {
                     Extract Recipe
                   </>
                 )}
-              </Button>
-              <Button 
-                onClick={() => {
-                  console.log('Manual modal trigger');
-                  setShowOCRResult(true);
-                  setOcrResult({
-                    success: true,
-                    extractedText: 'Manual test - this should show the modal',
-                    structuredData: { title: 'Test Recipe' },
-                    method: 'manual-test'
-                  });
-                }}
-                className="bg-green-600 hover:bg-green-700 text-white px-4"
-              >
-                Test Modal
               </Button>
               <Button onClick={savePhoto} className="bg-primary hover:bg-primary/90 text-primary-foreground px-6">
                 Save Photo

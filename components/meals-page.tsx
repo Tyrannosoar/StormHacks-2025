@@ -43,22 +43,17 @@ export function MealsPage() {
   const fetchMeals = async () => {
     try {
       setLoading(true)
-      // Fetch My Food meals (with ingredient availability)
-      const myFoodResponse = await fetch('http://localhost:3001/api/meals/my-food')
-      if (myFoodResponse.ok) {
-        const myFoodData = await myFoodResponse.json()
-        if (myFoodData.success && myFoodData.data) {
-          setSavedMeals(myFoodData.data)
-        }
+      // Fetch My Food meals (saved meals with planned dates)
+      const { supabaseMealsApi } = await import('@/lib/supabase-api')
+      const myFoodResponse = await supabaseMealsApi.getSaved()
+      if (myFoodResponse.success && myFoodResponse.data) {
+        setSavedMeals(myFoodResponse.data)
       }
 
-      // Fetch explore meals
-      const exploreResponse = await fetch('http://localhost:3001/api/meals/explore/meals')
-      if (exploreResponse.ok) {
-        const exploreData = await exploreResponse.json()
-        if (exploreData.success && exploreData.data) {
-          setExploreMeals(exploreData.data)
-        }
+      // Fetch explore meals (meals without planned dates)
+      const exploreResponse = await supabaseMealsApi.getExplore()
+      if (exploreResponse.success && exploreResponse.data) {
+        setExploreMeals(exploreResponse.data)
       }
     } catch (error) {
       console.error('Failed to fetch meals:', error)
@@ -152,36 +147,28 @@ export function MealsPage() {
         isArchived: false
       }
 
-      const response = await fetch('http://localhost:3001/api/meals', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(recipeData)
-      })
+      const { supabaseMealsApi } = await import('@/lib/supabase-api')
+      const response = await supabaseMealsApi.create(recipeData)
 
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          // Reset form
-          setNewRecipe({
-            title: '',
-            image: '',
-            cookTime: '',
-            servings: '',
-            ingredients: '',
-            instructions: ''
-          })
-          
-          setShowCreateRecipe(false)
-          
-          // Refresh the data to show the new recipe
-          await fetchMeals()
-          
-          alert('Recipe created successfully!')
-        }
+      if (response.success && response.data) {
+        // Reset form
+        setNewRecipe({
+          title: '',
+          image: '',
+          cookTime: '',
+          servings: '',
+          ingredients: '',
+          instructions: ''
+        })
+        
+        setShowCreateRecipe(false)
+        
+        // Refresh the data to show the new recipe
+        await fetchMeals()
+        
+        alert('Recipe created successfully!')
       } else {
-        alert('Failed to create recipe')
+        alert('Failed to create recipe: ' + (response.error || 'Unknown error'))
       }
     } catch (error) {
       console.error('Error creating recipe:', error)

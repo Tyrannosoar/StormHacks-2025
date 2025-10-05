@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, AlertTriangle, ShoppingCart } from "lucide-react"
-import { dashboardApi } from "@/lib/api"
+import { supabaseDashboardApi } from "@/lib/supabase-api"
 import { useState, useEffect } from "react"
 import { PlannedMeal, UrgentShoppingItem, ExpiringItem } from "@/lib/types"
 
@@ -16,7 +16,7 @@ export function MainDashboard() {
     const loadDashboardData = async () => {
       try {
         setLoading(true)
-        const response = await dashboardApi.getOverview() as any
+        const response = await supabaseDashboardApi.getOverview() as any
         if (response.success && response.data) {
           setPlannedMeals(response.data.plannedMeals || [])
           setUrgentShoppingItems(response.data.urgentShoppingItems || [])

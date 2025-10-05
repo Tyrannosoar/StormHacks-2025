@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createWorker } from 'tesseract.js';
 
 export async function POST(request: NextRequest) {
+  let worker;
+  
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -9,50 +12,84 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
+    // Check file size (limit to 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File too large. Please use an image smaller than 10MB.' }, { status: 400 });
+    }
+
     console.log('Processing OCR for file:', file.name, file.size, 'bytes');
 
-    // Convert file to base64 for display
+    // Convert file to buffer for Tesseract
     const buffer = await file.arrayBuffer();
-    const base64Image = Buffer.from(buffer).toString('base64');
+    const imageBuffer = Buffer.from(buffer);
     
-    // For now, return the actual image info and a simple text extraction
-    // This shows you what was actually captured
-    const actualExtractedText = `Image captured: ${file.name} (${file.size} bytes)
+    // Preprocess image for better OCR (resize if too large)
+    const maxSize = 2000; // Max width or height
+    let processedBuffer = imageBuffer;
     
-This is what your camera captured. In a real OCR implementation, this would be processed to extract text from the image.
-
-For now, this demonstrates the OCR workflow:
-1. Image captured ✅
-2. Sent to OCR processing ✅  
-3. Text extraction (simulated) ✅
-4. Recipe structuring (simulated) ✅
-
-Your actual image data is being processed, but we're using a demo text extraction for now.`;
-
-    // Create structured data based on the actual file
-    const structuredData = {
-      title: `Recipe from ${file.name}`,
-      ingredients: [
-        'Ingredient 1 (extracted from your image)',
-        'Ingredient 2 (extracted from your image)',
-        'Ingredient 3 (extracted from your image)'
-      ],
-      instructions: [
-        'Step 1: Process your captured image',
-        'Step 2: Extract text using OCR',
-        'Step 3: Structure as recipe data',
-        'Step 4: Save to your recipes'
-      ],
-      cookTime: 30,
-      servings: 4,
-      confidence: 'simulated'
-    };
-
+    // For very large images, we could add image resizing here
+    // This helps with OCR speed and accuracy
+    
+    // Create Tesseract worker with optimized settings for speed
+    worker = await createWorker('eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+        }
+      }
+    });
+    
+    // Set worker parameters for faster processing
+    await worker.setParameters({
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?;:()[]{}"\'/\\-+=*&%$#@^~`|<> ',
+      tessedit_pageseg_mode: '6', // Uniform block of text
+      tessedit_ocr_engine_mode: '1', // Neural nets LSTM engine only
+      tessedit_do_invert: '0', // Don't invert image
+      classify_enable_learning: '0', // Disable learning for speed
+      textord_heavy_nr: '1', // Heavy text line normalization
+    });
+    
+    // Perform OCR with shorter timeout for better UX
+    console.log('Starting OCR processing...');
+    const ocrPromise = worker.recognize(processedBuffer);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('OCR processing timeout')), 15000); // 15 second timeout
+    });
+    
+    const { data: { text, confidence } } = await Promise.race([ocrPromise, timeoutPromise]) as any;
+    
+    console.log('OCR completed. Confidence:', confidence);
+    console.log('Extracted text length:', text.length);
+    
+    // Check if we got any meaningful text
+    if (!text || text.trim().length < 3) {
+      return NextResponse.json({
+        success: false,
+        error: 'No text detected in image. Please try with a clearer image or different text.',
+        extractedText: text || '',
+        structuredData: {
+          title: 'No text detected',
+          ingredients: [],
+          instructions: [],
+          cookTime: 0,
+          servings: 0,
+          confidence: 'low'
+        }
+      });
+    }
+    
+    // Structure the extracted text as recipe data
+    const structuredData = structureRecipeText(text);
+    
+    // Add confidence from OCR
+    structuredData.confidence = confidence > 80 ? 'high' : confidence > 60 ? 'medium' : 'low';
+    
     return NextResponse.json({
       success: true,
-      extractedText: actualExtractedText,
+      extractedText: text,
       structuredData: structuredData,
-      method: 'real-image-processing',
+      method: 'tesseract-ocr',
+      confidence: confidence,
       imageInfo: {
         name: file.name,
         size: file.size,
@@ -62,10 +99,36 @@ Your actual image data is being processed, but we're using a demo text extractio
 
   } catch (error) {
     console.error('OCR processing error:', error);
+    
+    // Handle specific error types
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        return NextResponse.json({ 
+          error: 'OCR processing timed out. Please try with a smaller or clearer image.',
+          details: error.message
+        }, { status: 408 });
+      }
+      if (error.message.includes('memory') || error.message.includes('allocation')) {
+        return NextResponse.json({ 
+          error: 'Image too large for processing. Please try with a smaller image.',
+          details: error.message
+        }, { status: 413 });
+      }
+    }
+    
     return NextResponse.json({ 
       error: 'OCR processing failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
+  } finally {
+    // Clean up worker
+    if (worker) {
+      try {
+        await worker.terminate();
+      } catch (cleanupError) {
+        console.error('Error terminating worker:', cleanupError);
+      }
+    }
   }
 }
 

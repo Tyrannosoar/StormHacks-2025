@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShoppingItem } from "@/lib/types";
-import { shoppingApi } from "@/lib/api";
+import { supabaseShoppingApi } from "@/lib/supabase-api";
 
 interface EditShoppingItemModalProps {
   isOpen: boolean;
@@ -60,7 +60,7 @@ export function EditShoppingItemModal({
         ...formData
       };
 
-      const response = await shoppingApi.update(item.id, updatedItem);
+      const response = await supabaseShoppingApi.update(item.id, updatedItem);
       
       if (response.success && response.data) {
         onSave(response.data);
@@ -84,7 +84,7 @@ export function EditShoppingItemModal({
         setIsLoading(true);
         setError(null);
 
-        const response = await shoppingApi.delete(item.id);
+        const response = await supabaseShoppingApi.delete(item.id);
         
         if (response.success) {
           onDelete(item.id);

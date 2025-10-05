@@ -8,7 +8,15 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Package2, Milk, Apple, Beef, Coffee, Wheat, Droplets, Trash2 } from "lucide-react"
 import { AddItemModal } from "@/components/add-item-modal"
-import { StorageItem } from "@/lib/types"
+
+interface StorageItem {
+  id: number
+  name: string
+  amount: string
+  expiryDays: number
+  plannedAmount: string
+  category: string
+}
 
 const categoryIcons = {
   Dairy: Milk,
@@ -23,42 +31,36 @@ const categoryIcons = {
 
 export function StoragePage() {
   const [showAddModal, setShowAddModal] = useState(false)
-  const [storageItems, setStorageItems] = useState<StorageItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [storageItems, setStorageItems] = useState<StorageItem[]>([
+    // Dairy
+    { id: 1, name: "Whole Milk", amount: "1L", expiryDays: 3, plannedAmount: "500ml", category: "Dairy" },
+    { id: 2, name: "Greek Yogurt", amount: "500g", expiryDays: 1, plannedAmount: "200g", category: "Dairy" },
+    { id: 3, name: "Cheddar Cheese", amount: "200g", expiryDays: 7, plannedAmount: "100g", category: "Dairy" },
+
+    // Vegetables
+    { id: 4, name: "Spinach", amount: "150g", expiryDays: 2, plannedAmount: "100g", category: "Vegetables" },
+    { id: 5, name: "Tomatoes", amount: "6 pcs", expiryDays: 5, plannedAmount: "3 pcs", category: "Vegetables" },
+    { id: 6, name: "Bell Peppers", amount: "3 pcs", expiryDays: 8, plannedAmount: "1 pc", category: "Vegetables" },
+
+    // Meat
+    { id: 7, name: "Chicken Breast", amount: "800g", expiryDays: 3, plannedAmount: "400g", category: "Meat" },
+    { id: 8, name: "Ground Beef", amount: "500g", expiryDays: 2, plannedAmount: "300g", category: "Meat" },
+
+    // Fruits
+    { id: 9, name: "Bananas", amount: "6 pcs", expiryDays: 4, plannedAmount: "2 pcs", category: "Fruits" },
+    { id: 10, name: "Strawberries", amount: "250g", expiryDays: 3, plannedAmount: "150g", category: "Fruits" },
+
+    // Pantry
+    { id: 11, name: "Pasta", amount: "500g", expiryDays: 365, plannedAmount: "200g", category: "Pantry" },
+    { id: 12, name: "Rice", amount: "1kg", expiryDays: 180, plannedAmount: "300g", category: "Pantry" },
+
+    // Beverages
+    { id: 13, name: "Orange Juice", amount: "1L", expiryDays: 6, plannedAmount: "250ml", category: "Beverages" },
+  ])
 
   const [swipeStates, setSwipeStates] = useState<Record<number, { isSwipedLeft: boolean; touchStartX: number | null }>>(
     {},
   )
-
-  // Load storage items from Supabase
-  useEffect(() => {
-    const loadStorageItems = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        console.log('📦 Loading storage items...')
-        const { supabaseStorageApi } = await import('@/lib/supabase-api')
-        const response = await supabaseStorageApi.getAll()
-        console.log('📦 API Response:', response)
-        
-        if (response.success && response.data) {
-          setStorageItems(response.data)
-          console.log('📦 Storage items loaded successfully:', response.data.length, 'items')
-        } else {
-          setError('Invalid response from server')
-          console.error('📦 Invalid response:', response)
-        }
-      } catch (err) {
-        setError('Failed to load storage items')
-        console.error('📦 Error loading storage items:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadStorageItems()
-  }, [])
 
   const categories = Array.from(new Set(storageItems.map((item) => item.category)))
 
@@ -77,16 +79,9 @@ export function StoragePage() {
     return `${Math.ceil(daysLeft / 30)} months`
   }
 
-  const addNewItem = async (newItem: Omit<StorageItem, "id">) => {
-    try {
-      const { supabaseStorageApi } = await import('@/lib/supabase-api')
-      const response = await supabaseStorageApi.create(newItem)
-      if (response.success && response.data) {
-        setStorageItems((prev) => [...prev, response.data!])
-      }
-    } catch (err) {
-      console.error('Error adding item:', err)
-    }
+  const addNewItem = (newItem: Omit<StorageItem, "id">) => {
+    const id = Math.max(...storageItems.map((item) => item.id)) + 1
+    setStorageItems([...storageItems, { ...newItem, id }])
   }
 
   const handleTouchStart = (itemId: number, e: React.TouchEvent) => {
@@ -113,43 +108,17 @@ export function StoragePage() {
   const handleTouchEnd = (itemId: number) => {
     setSwipeStates((prev) => ({
       ...prev,
-      [itemId]: { ...prev[itemId], isSwipedLeft: false },
+      [itemId]: { ...prev[itemId], touchStartX: null },
     }))
   }
 
-  const deleteItem = async (itemId: number) => {
-    try {
-      console.log('🗑️ Deleting storage item:', itemId)
-      const { supabaseStorageApi } = await import('@/lib/supabase-api')
-      const response = await supabaseStorageApi.delete(itemId)
-      
-      if (response.success) {
-        // Update local state only after successful API call
-        setStorageItems((prev) => prev.filter((item) => item.id !== itemId))
-        setSwipeStates((prev) => {
-          const newState = { ...prev }
-          delete newState[itemId]
-          return newState
-        })
-        console.log('✅ Storage item deleted successfully')
-        
-        // Show success notification
-        const notification = document.createElement('div')
-        notification.textContent = '✅ Item deleted successfully'
-        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50'
-        document.body.appendChild(notification)
-        
-        setTimeout(() => {
-          document.body.removeChild(notification)
-        }, 3000)
-      } else {
-        console.error('❌ Failed to delete storage item:', response.error)
-        alert(`❌ Failed to delete item: ${response.error}`)
-      }
-    } catch (err) {
-      console.error('❌ Error deleting storage item:', err)
-      alert('❌ Error deleting item')
-    }
+  const deleteItem = (itemId: number) => {
+    setStorageItems((prev) => prev.filter((item) => item.id !== itemId))
+    setSwipeStates((prev) => {
+      const newState = { ...prev }
+      delete newState[itemId]
+      return newState
+    })
   }
 
   const resetSwipe = (itemId: number) => {
@@ -157,30 +126,6 @@ export function StoragePage() {
       ...prev,
       [itemId]: { isSwipedLeft: false, touchStartX: null },
     }))
-  }
-
-  if (loading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading storage items...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="text-center">
-          <p className="text-destructive mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -273,20 +218,12 @@ export function StoragePage() {
         )
       })}
 
+
       <AddItemModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSave={addNewItem}
-        title="Add Storage Item"
-        fields={[
-          { name: "name", label: "Item Name", type: "text", required: true },
-          { name: "amount", label: "Current Amount", type: "text", required: true },
-          { name: "expiryDays", label: "Days Until Expiry", type: "number", required: true },
-          { name: "plannedAmount", label: "Planned Amount", type: "text", required: true },
-          { name: "category", label: "Category", type: "select", required: true, options: [
-            "Dairy", "Fruits", "Vegetables", "Meat", "Beverages", "Grains", "Pantry", "Other"
-          ]}
-        ]}
+        onAdd={addNewItem}
+        categories={categories}
       />
     </div>
   )
