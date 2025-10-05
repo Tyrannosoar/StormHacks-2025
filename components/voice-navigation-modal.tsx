@@ -162,6 +162,104 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
     }
   };
 
+  const generateIntelligentResponse = async (command: string, targetPage: string | null, currentPage: string): Promise<string> => {
+    try {
+      console.log('🤖 Requesting Gemini response for:', command);
+      
+      const response = await fetch('/api/voice-assistant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          command, 
+          currentPage 
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Voice assistant API error:', response.status);
+        const errorText = await response.text();
+        console.error('API Error details:', errorText);
+        // Fallback to simple response
+        return `I understand you said "${command}". Let me help you with that.`;
+      }
+
+      const data = await response.json();
+      console.log('🤖 Gemini response:', data);
+      
+      if (data.text && data.text.trim()) {
+        return data.text.trim();
+      } else {
+        console.warn('Empty or invalid response from Gemini:', data);
+        return `I understand you said "${command}". Let me help you with that.`;
+      }
+    } catch (error) {
+      console.error('Error generating intelligent response:', error);
+      // Fallback to simple response
+      return `I understand you said "${command}". Let me help you with that.`;
+    }
+  };
+
+  const speakResponse = async (text: string) => {
+    try {
+      setIsSpeaking(true);
+      setTranscript(`🔊 Speaking: "${text}"`);
+      
+      const response = await fetch('/api/elevenlabs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        console.error('ElevenLabs TTS error:', response.status);
+        // Don't show error to user, just continue with text response
+        setTranscript(`💬 ${text}`);
+        setIsSpeaking(false);
+        // Continue listening after a short delay
+        if (isActive) {
+          setTimeout(() => {
+            startContinuousListening();
+          }, 2000);
+        }
+        return;
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        audioRef.current.play();
+        
+        audioRef.current.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          // Continue listening after speaking
+          if (isActive) {
+            setTimeout(() => {
+              startContinuousListening();
+            }, 1000);
+          }
+        };
+      }
+    } catch (error) {
+      console.error('TTS error:', error);
+      // Don't show error to user, just continue with text response
+      setTranscript(`💬 ${text}`);
+      setIsSpeaking(false);
+      // Continue listening even if TTS fails
+      if (isActive) {
+        setTimeout(() => {
+          startContinuousListening();
+        }, 2000);
+      }
+    }
+  };
+
   const processAudioWithWhisper = async (audioBlob: Blob) => {
     setIsProcessing(true);
     setTranscript("🎤 Processing your speech with local Whisper...");
@@ -232,113 +330,87 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
   };
 
   const processVoiceCommand = async (command: string) => {
-    // Simple command processing for navigation
-    const navigationCommands = {
-      "go to shopping": "shopping",
-      "shopping": "shopping",
-      "shopping list": "shopping",
-      "go to storage": "storage", 
-      "storage": "storage",
-      "inventory": "storage",
-      "go to meals": "meals",
-      "meals": "meals",
-      "recipes": "meals",
-      "cooking": "meals",
-      "go to camera": "camera",
-      "camera": "camera",
-      "scan": "camera",
-      "take photo": "camera"
-    };
-
-    // Find matching command
-    let targetPage = null;
-    for (const [key, page] of Object.entries(navigationCommands)) {
-      if (command.includes(key)) {
-        targetPage = page;
-        break;
-      }
-    }
-
-    // If no direct match, try to be smarter about it
-    if (!targetPage) {
-      if (command.includes("shop") || command.includes("buy") || command.includes("grocery")) {
-        targetPage = "shopping";
-      } else if (command.includes("store") || command.includes("inventory") || command.includes("stock")) {
-        targetPage = "storage";
-      } else if (command.includes("meal") || command.includes("recipe") || command.includes("cook") || command.includes("food")) {
-        targetPage = "meals";
-      } else if (command.includes("camera") || command.includes("scan") || command.includes("photo")) {
-        targetPage = "camera";
-      }
-    }
-
-    let responseText = "";
-    
-    if (targetPage && targetPage !== currentPage) {
-      responseText = `🚀 Navigating to ${getPageName(targetPage)}...`;
-      onNavigate(targetPage as any);
-      // Don't close the modal, just navigate
-    } else if (targetPage === currentPage) {
-      responseText = `📍 You're already on the ${getPageName(currentPage)} page!`;
-    } else {
-      responseText = `❓ I didn't understand that. Try saying 'go to shopping', 'go to storage', 'go to meals', or 'go to camera'.`;
-    }
-
-    // Show text response for now (ElevenLabs optional)
-    setTranscript(responseText);
-    
-    // After showing response, restart listening if still active
-    if (isActive) {
-      setTimeout(() => {
-        startContinuousListening();
-      }, 2000);
-    }
-  };
-
-  const speakWithElevenLabs = async (text: string) => {
-    setIsSpeaking(true);
-    
     try {
-      const response = await fetch('/api/elevenlabs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text }),
-      });
+      // Simple command processing for navigation
+      const navigationCommands = {
+        "go to shopping": "shopping",
+        "shopping": "shopping",
+        "shopping list": "shopping",
+        "go to storage": "storage", 
+        "storage": "storage",
+        "inventory": "storage",
+        "go to meals": "meals",
+        "meals": "meals",
+        "recipes": "meals",
+        "cooking": "meals",
+        "go to camera": "camera",
+        "camera": "camera",
+        "scan": "camera",
+        "take photo": "camera"
+      };
 
-      if (!response.ok) {
-        throw new Error('ElevenLabs API error');
+      // Find matching command
+      let targetPage = null;
+      for (const [key, page] of Object.entries(navigationCommands)) {
+        if (command.includes(key)) {
+          targetPage = page;
+          break;
+        }
       }
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      // If no direct match, try to be smarter about it
+      if (!targetPage) {
+        if (command.includes("shop") || command.includes("buy") || command.includes("grocery")) {
+          targetPage = "shopping";
+        } else if (command.includes("store") || command.includes("inventory") || command.includes("stock")) {
+          targetPage = "storage";
+        } else if (command.includes("meal") || command.includes("recipe") || command.includes("cook") || command.includes("food")) {
+          targetPage = "meals";
+        } else if (command.includes("camera") || command.includes("scan") || command.includes("photo")) {
+          targetPage = "camera";
+        }
       }
+
+      // Generate intelligent response using Gemini AI
+      const intelligentResponse = await generateIntelligentResponse(command, targetPage, currentPage);
+      console.log('🎯 Final Gemini response:', intelligentResponse);
       
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      
-      audio.onended = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-      };
-      
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-      };
-      
-      await audio.play();
-      
+      if (targetPage && targetPage !== currentPage) {
+        setTranscript(`🚀 Navigating to ${getPageName(targetPage)}...`);
+        onNavigate(targetPage as any);
+        // Show Gemini's response and speak it
+        setTimeout(() => {
+          setTranscript(`🧠 ${intelligentResponse}`);
+        }, 500);
+        await speakResponse(intelligentResponse);
+      } else if (targetPage === currentPage) {
+        setTranscript(`📍 You're already on the ${getPageName(currentPage)} page!`);
+        // Show Gemini's response and speak it
+        setTimeout(() => {
+          setTranscript(`🧠 ${intelligentResponse}`);
+        }, 500);
+        await speakResponse(intelligentResponse);
+      } else {
+        setTranscript(`❓ I didn't understand that. Try saying 'go to shopping', 'go to storage', 'go to meals', or 'go to camera'.`);
+        // Show Gemini's response and speak it
+        setTimeout(() => {
+          setTranscript(`🧠 ${intelligentResponse}`);
+        }, 500);
+        await speakResponse(intelligentResponse);
+      }
     } catch (error) {
-      console.error('ElevenLabs error:', error);
-      setIsSpeaking(false);
+      console.error('Error processing voice command:', error);
+      // Fallback to simple text response
+      setTranscript(`💬 Processing your command...`);
+      // Continue listening
+      if (isActive) {
+        setTimeout(() => {
+          startContinuousListening();
+        }, 2000);
+      }
     }
   };
+
 
   const getPageIcon = (page: string) => {
     switch (page) {
