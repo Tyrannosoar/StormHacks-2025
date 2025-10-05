@@ -1,9 +1,37 @@
-# Backend files (not needed for Vercel deployment)
+# Backend server files (not needed for Vercel)
 backend/
+backend/**
+backend/**/*
+
+# Development files
 *.log
-node_modules/
 .DS_Store
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Build artifacts
+dist/
+build/
+.next/cache/
+
+# Documentation
+*.md
+!README.md
+
+# Scripts
+install-whisper.sh
+deploy.sh
+*.sh
+
+# Setup files
+FFMPEG_SETUP.md
+LOCAL_WHISPER_SETUP.md
+VOICE_SETUP.md
+SETUP_GUIDE.md
+DEPLOYMENT.md
+
+# Node modules (will be installed by Vercel)
+node_modules/
+backend/node_modules/

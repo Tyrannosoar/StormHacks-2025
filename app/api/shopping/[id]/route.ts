@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { shoppingItems } from '@/lib/mockData';
+import { getShoppingItems, updateShoppingItems } from '@/lib/mockData';
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +7,7 @@ export async function GET(
 ) {
   try {
     const id = parseInt(params.id);
+    const shoppingItems = getShoppingItems();
     const item = shoppingItems.find(item => item.id === id);
     
     if (!item) {
@@ -35,6 +36,7 @@ export async function PUT(
 ) {
   try {
     const id = parseInt(params.id);
+    const shoppingItems = getShoppingItems();
     const itemIndex = shoppingItems.findIndex(item => item.id === id);
     
     if (itemIndex === -1) {
@@ -46,6 +48,7 @@ export async function PUT(
 
     const body = await request.json();
     shoppingItems[itemIndex] = { ...shoppingItems[itemIndex], ...body };
+    updateShoppingItems(shoppingItems);
     
     return NextResponse.json({
       success: true,
@@ -66,6 +69,7 @@ export async function DELETE(
 ) {
   try {
     const id = parseInt(params.id);
+    const shoppingItems = getShoppingItems();
     const itemIndex = shoppingItems.findIndex(item => item.id === id);
     
     if (itemIndex === -1) {
@@ -76,6 +80,7 @@ export async function DELETE(
     }
 
     const deletedItem = shoppingItems.splice(itemIndex, 1)[0];
+    updateShoppingItems(shoppingItems);
     
     return NextResponse.json({
       success: true,

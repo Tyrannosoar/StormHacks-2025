@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { shoppingItems, storageItems } from '@/lib/mockData';
+import { getShoppingItems, getStorageItems } from '@/lib/mockData';
 
 export async function GET() {
   try {
@@ -11,12 +11,12 @@ export async function GET() {
     ];
 
     // Get urgent shopping items (high priority)
-    const urgentShoppingItems = shoppingItems
+    const urgentShoppingItems = getShoppingItems()
       .filter(item => item.priority === "high")
       .map(item => ({ id: item.id, name: item.name, priority: item.priority }));
 
     // Get expiring items (items with expiryDays <= 3)
-    const expiringItems = storageItems
+    const expiringItems = getStorageItems()
       .filter(item => item.expiryDays <= 3)
       .map(item => ({ id: item.id, name: item.name, daysLeft: item.expiryDays, category: item.category }));
 
