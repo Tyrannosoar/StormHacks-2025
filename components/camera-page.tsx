@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { X, Camera, RotateCcw, FishOff as FlashOff, SlashIcon as FlashOn } from "lucide-react"
+import { X, Camera, RotateCcw, FishOff as FlashOff, SlashIcon as FlashOn, FileText, Loader2 } from "lucide-react"
 
 interface CameraPageProps {
   onClose: () => void
@@ -16,6 +16,9 @@ export function CameraPage({ onClose }: CameraPageProps) {
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment")
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false)
+  const [ocrResult, setOcrResult] = useState<any>(null)
+  const [showOCRResult, setShowOCRResult] = useState(false)
 
   useEffect(() => {
     startCamera()
@@ -103,6 +106,70 @@ export function CameraPage({ onClose }: CameraPageProps) {
     setCapturedImage(null)
   }
 
+  const processOCR = async () => {
+    if (!capturedImage) return;
+
+    setIsProcessingOCR(true);
+    // Don't reset ocrResult here - keep previous result
+
+    try {
+      // Convert data URL to blob
+      const response = await fetch(capturedImage);
+      const blob = await response.blob();
+      
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', blob, 'recipe.jpg');
+
+      console.log('Starting OCR processing...');
+
+      // Send to OCR API with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const ocrResponse = await fetch('/api/ocr', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (ocrResponse.ok) {
+        const result = await ocrResponse.json();
+        console.log('OCR Result:', result);
+        
+        // Set the OCR result and show the modal directly
+        setOcrResult(result);
+        console.log('OCR result set:', result);
+        
+        // Force immediate state update
+        setShowOCRResult(true);
+        console.log('Modal should now be visible');
+        
+        // Force a re-render
+        setTimeout(() => {
+          console.log('Forcing re-render...');
+          setShowOCRResult(false);
+          setTimeout(() => setShowOCRResult(true), 50);
+        }, 200);
+      } else {
+        const error = await ocrResponse.json();
+        console.error('OCR Error:', error);
+        alert('OCR processing failed: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('OCR processing error:', error);
+      if (error instanceof Error && error.name === 'AbortError') {
+        alert('OCR processing timed out. Please try with a clearer image or smaller file size.');
+      } else {
+        alert('Error processing image. Please try again.');
+      }
+    } finally {
+      setIsProcessingOCR(false);
+    }
+  };
+
   const savePhoto = () => {
     if (capturedImage) {
       // In a real app, you would save to gallery or process the image
@@ -111,6 +178,46 @@ export function CameraPage({ onClose }: CameraPageProps) {
       onClose()
     }
   }
+
+  const addRecipeToSystem = async () => {
+    if (!ocrResult?.structuredData) return;
+
+    try {
+      const recipeData = {
+        title: ocrResult.structuredData.title || 'Recipe from Image',
+        image: capturedImage,
+        cookTime: ocrResult.structuredData.cookTime || 30,
+        servings: ocrResult.structuredData.servings || 4,
+        hasAllIngredients: false,
+        ingredients: ocrResult.structuredData.ingredients,
+        instructions: ocrResult.structuredData.instructions,
+        plannedDate: new Date().toISOString().split('T')[0],
+        mealType: "dinner" as const,
+        isArchived: false
+      };
+
+      const response = await fetch('/api/meals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(recipeData)
+      });
+
+      if (response.ok) {
+        alert('Recipe added successfully!');
+        setShowOCRResult(false);
+        setCapturedImage(null);
+        setOcrResult(null);
+        onClose();
+      } else {
+        alert('Failed to add recipe. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error adding recipe:', error);
+      alert('Error adding recipe. Please try again.');
+    }
+  };
 
   if (capturedImage) {
     return (
@@ -131,7 +238,7 @@ export function CameraPage({ onClose }: CameraPageProps) {
 
           {/* Bottom Controls */}
           <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-6">
-            <div className="flex items-center justify-center gap-8">
+            <div className="flex items-center justify-center gap-4">
               <Button
                 variant="outline"
                 onClick={retakePhoto}
@@ -139,8 +246,152 @@ export function CameraPage({ onClose }: CameraPageProps) {
               >
                 Retake
               </Button>
-              <Button onClick={savePhoto} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8">
+              <Button 
+                onClick={processOCR}
+                disabled={isProcessingOCR}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 flex items-center gap-2"
+              >
+                {isProcessingOCR ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Analyzing Text...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4" />
+                    Extract Recipe
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={() => {
+                  console.log('Manual modal trigger');
+                  setShowOCRResult(true);
+                  setOcrResult({
+                    success: true,
+                    extractedText: 'Manual test - this should show the modal',
+                    structuredData: { title: 'Test Recipe' },
+                    method: 'manual-test'
+                  });
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white px-4"
+              >
+                Test Modal
+              </Button>
+              <Button onClick={savePhoto} className="bg-primary hover:bg-primary/90 text-primary-foreground px-6">
                 Save Photo
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // OCR Result Modal
+  console.log('Modal check - showOCRResult:', showOCRResult, 'ocrResult:', ocrResult);
+  console.log('Modal condition check:', showOCRResult && ocrResult);
+  
+  if (showOCRResult && ocrResult) {
+    console.log('✅ RENDERING OCR RESULT MODAL');
+    return (
+      <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          {/* Close Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowOCRResult(false)}
+            className="absolute top-4 right-4 z-10 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-full"
+          >
+            <X className="w-6 h-6" />
+          </Button>
+
+          <div className="p-6">
+            <h2 className="text-2xl font-bold mb-6">Recipe Extracted from Image</h2>
+            
+            {/* Confidence Indicator */}
+            <div className="mb-6">
+              <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                ocrResult.structuredData?.confidence === 'high' ? 'bg-green-100 text-green-800' :
+                ocrResult.structuredData?.confidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                Confidence: {ocrResult.structuredData?.confidence || 'unknown'}
+              </div>
+            </div>
+
+            {/* Recipe Details */}
+            <div className="space-y-6">
+              {/* Title */}
+              {ocrResult.structuredData?.title && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Recipe Title</h3>
+                  <p className="text-gray-700">{ocrResult.structuredData.title}</p>
+                </div>
+              )}
+
+              {/* Ingredients */}
+              {ocrResult.structuredData?.ingredients?.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Ingredients</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    {ocrResult.structuredData.ingredients.map((ingredient: string, index: number) => (
+                      <li key={index} className="text-gray-700">{ingredient}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Instructions */}
+              {ocrResult.structuredData?.instructions?.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Instructions</h3>
+                  <ol className="list-decimal list-inside space-y-1">
+                    {ocrResult.structuredData.instructions.map((instruction: string, index: number) => (
+                      <li key={index} className="text-gray-700">{instruction}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {/* Raw Text */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">📄 What Was Scanned</h3>
+                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                  <p className="text-sm text-gray-800 whitespace-pre-wrap font-mono">{ocrResult.extractedText}</p>
+                </div>
+              </div>
+
+              {/* Processing Method */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Processing Method:</strong> {ocrResult.method}
+                </p>
+                {ocrResult.imageInfo && (
+                  <div className="mt-2 text-xs text-blue-600">
+                    <p><strong>File:</strong> {ocrResult.imageInfo.name}</p>
+                    <p><strong>Size:</strong> {ocrResult.imageInfo.size} bytes</p>
+                    <p><strong>Type:</strong> {ocrResult.imageInfo.type}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 mt-8">
+              <Button
+                variant="outline"
+                onClick={() => setShowOCRResult(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={addRecipeToSystem}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Add to My Recipes
               </Button>
             </div>
           </div>
@@ -222,7 +473,7 @@ export function CameraPage({ onClose }: CameraPageProps) {
 
           {/* Capture Instructions */}
           <div className="text-center mt-4">
-            <p className="text-white text-sm">Tap to capture grocery items</p>
+            <p className="text-white text-sm">Tap to capture grocery items or recipe cards</p>
           </div>
         </div>
 
