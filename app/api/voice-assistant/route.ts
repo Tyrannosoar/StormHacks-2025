@@ -12,15 +12,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing Google API key' }, { status: 500 });
     }
 
-    const systemPrompt = `You are a helpful voice assistant for a grocery management app.
+    const systemPrompt = `You are a concise, helpful voice assistant for a grocery app.
+Answer in <= 25 words. Only navigate if explicitly asked. If the user asks for meal ideas, propose 2-3 recipes using current ingredients. If they ask for pairings, suggest 2-3 ingredients that pair well. Do not suggest meals or pairings unless asked.`;
 
-Session: ${sessionId || 'anonymous'}
-Current page: ${currentPage || 'dashboard'}
-
-Context (shopping and storage are arrays):
-${typeof context === 'string' ? context : JSON.stringify(context || {}, null, 2)}
-
-Respond concisely (<= 20 words). Prefer actionable responses. If navigation intent is detected, confirm the target page briefly.`;
+    const promptText = [
+      systemPrompt,
+      `Session: ${sessionId || 'anonymous'}`,
+      `Current page: ${currentPage || 'dashboard'}`,
+      `Context JSON (shopping, storage): ${typeof context === 'string' ? context : JSON.stringify(context || {}, null, 2)}`,
+      `User: ${transcript}`,
+      `Assistant:`
+    ].join('\n\n');
 
     // Call Gemini API
     async function callGemini(model: string) {
@@ -30,12 +32,13 @@ Respond concisely (<= 20 words). Prefer actionable responses. If navigation inte
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
             contents: [
-              { role: 'user', parts: [{ text: transcript }] },
-              { role: 'user', parts: [{ text: `Context JSON: ${JSON.stringify(context || {})}` }] }
+              {
+                role: 'user',
+                parts: [{ text: promptText }]
+              }
             ],
-            generationConfig: { maxOutputTokens: 150, temperature: 0.7, topP: 0.9, topK: 40 }
+            generationConfig: { maxOutputTokens: 120, temperature: 0.5, topP: 0.9, topK: 40 }
           })
         }
       );
@@ -58,10 +61,41 @@ Respond concisely (<= 20 words). Prefer actionable responses. If navigation inte
 
     const geminiData = await geminiResponse.json();
     const parts = geminiData?.candidates?.[0]?.content?.parts || [];
-    const combined = Array.isArray(parts)
-      ? parts.map((p: any) => (typeof p?.text === 'string' ? p.text : '')).filter(Boolean).join(' ').trim()
-      : '';
-    const responseText = (combined || "I understand. Let me help you with that.").trim();
+    let combined = '';
+    if (Array.isArray(parts) && parts.length > 0) {
+      combined = parts
+        .map((p: any) => (typeof p?.text === 'string' ? p.text : ''))
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+    }
+    // Fallback extraction
+    if (!combined && geminiData?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      combined = String(geminiData.candidates[0].content.parts[0].text).trim();
+    }
+    const responseText = (combined || 'I understand. Let me help you with that.').trim();
+
+    const normalized = responseText
+      .toLowerCase()
+      .replace(/^[^a-z0-9]+/g, '') // strip leading emojis/symbols
+      .trim();
+    const genericPhrases = new Set([
+      'i understand. let me help you with that.',
+      'i understand let me help you with that',
+      'okay.',
+      'ok.',
+      'okay'
+    ]);
+    const isGeneric = genericPhrases.has(normalized);
+
+    if (isGeneric) {
+      return NextResponse.json({ text: responseText, noAudio: true }, {
+        headers: {
+          'X-Response-Text': encodeURIComponent(responseText),
+          'X-Model-Used': usedModel
+        }
+      });
+    }
 
     // Convert text to audio via ElevenLabs
     const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB'}` , {
