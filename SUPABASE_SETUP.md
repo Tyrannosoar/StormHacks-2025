@@ -1,6 +1,6 @@
-# Supabase Setup Guide for MagnaCarter
+# Supabase Setup Guide for MagnaCart
 
-This guide will help you set up Supabase for your MagnaCarter grocery management app.
+This guide will help you set up Supabase for your MagnaCart grocery management app.
 
 ## Step 1: Create a Supabase Project
 
@@ -9,7 +9,7 @@ This guide will help you set up Supabase for your MagnaCarter grocery management
 3. Click "New Project"
 4. Choose your organization
 5. Enter project details:
-   - **Name**: `MagnaCarter`
+   - **Name**: `MagnaCart`
    - **Database Password**: Choose a strong password (save this!)
    - **Region**: Choose the closest region to your users
 6. Click "Create new project"

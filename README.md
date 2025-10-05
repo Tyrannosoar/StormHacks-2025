@@ -1,4 +1,4 @@
-# MagnaCarter - Food Management App
+# MagnaCart - Food Management App
 
 A comprehensive food management application built with Next.js and Express.js, designed to help users track their food inventory, plan meals, manage shopping lists, and schedule cooking activities.
 

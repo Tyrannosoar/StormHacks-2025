@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Deploying MagnaCarter to Vercel..."
+echo "🚀 Deploying MagnaCart to Vercel..."
 echo "=================================="
 
 # Check if Vercel CLI is installed

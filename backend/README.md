@@ -1,6 +1,6 @@
-# MagnaCarter Backend API
+# MagnaCart Backend API
 
-A local backend API for the MagnaCarter food management application, built with Express.js and TypeScript.
+A local backend API for the MagnaCart food management application, built with Express.js and TypeScript.
 
 ## Features
 

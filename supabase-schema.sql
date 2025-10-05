@@ -1,4 +1,4 @@
--- Supabase Database Schema for MagnaCarter Grocery Management App
+-- Supabase Database Schema for MagnaCart Grocery Management App
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

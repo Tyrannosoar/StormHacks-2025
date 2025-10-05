@@ -29,6 +29,33 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioInstanceRef = useRef<HTMLAudioElement | null>(null);
+  const lastAudioUrlRef = useRef<string | null>(null);
+  const stopAndCleanupAudio = (deferRevoke = true) => {
+    try { audioInstanceRef.current?.pause(); } catch {}
+    if (audioInstanceRef.current) {
+      audioInstanceRef.current.onended = null;
+      audioInstanceRef.current.src = '';
+      audioInstanceRef.current = null;
+    }
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch {}
+      audioRef.current.currentTime = 0;
+      audioRef.current.src = '';
+    }
+    const urlToRevoke = lastAudioUrlRef.current;
+    lastAudioUrlRef.current = null;
+    if (urlToRevoke) {
+      if (deferRevoke) {
+        setTimeout(() => {
+          try { URL.revokeObjectURL(urlToRevoke); } catch {}
+        }, 500);
+      } else {
+        try { URL.revokeObjectURL(urlToRevoke); } catch {}
+      }
+    }
+  };
+
   const streamRef = useRef<MediaStream | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -52,10 +79,8 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       streamRef.current = stream;
       setIsActive(true);
       setTranscript("🎤 Voice agent activated. I'm listening...");
-      if (audioRef.current && !audioRef.current.paused) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
+      // Cleanup any existing audio instance and URL (defer revoke to avoid AbortError)
+      stopAndCleanupAudio(true);
       
       // Always use the backend API for voice recognition
       await startContinuousListening();
@@ -124,10 +149,7 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       mediaRecorder.start();
       setListening(true);
       setTranscript("🎧 Listening... Speak clearly!");
-      if (audioRef.current && !audioRef.current.paused) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
+      stopAndCleanupAudio(true);
 
       // Stop recording after 3 seconds of silence or 10 seconds max
       const maxRecordingTime = 10000; // 10 seconds max
@@ -209,22 +231,41 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       const responseTextHeader = response.headers.get('X-Response-Text');
       const responseText = responseTextHeader ? decodeURIComponent(responseTextHeader) : '';
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
+      const contentType = response.headers.get('Content-Type') || '';
+      if (contentType.includes('audio/mpeg')) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        // Cleanup previous instance and URL
+        try { audioInstanceRef.current?.pause(); } catch {}
+        if (lastAudioUrlRef.current) {
+          URL.revokeObjectURL(lastAudioUrlRef.current);
+          lastAudioUrlRef.current = null;
+        }
+        // Create a fresh audio instance per playback
+        const audio = new Audio(audioUrl);
+        audio.preload = 'auto';
+        audio.load();
+        audioInstanceRef.current = audio;
+        lastAudioUrlRef.current = audioUrl;
         try {
-          await audioRef.current.play();
-        } catch (_) {}
-        audioRef.current.onended = () => {
-          URL.revokeObjectURL(audioUrl);
+          await audio.play();
+        } catch (err) {
+          // Ignore AbortError; suppress noisy logs for expected interruptions
+          if (!(err instanceof DOMException && err.name === 'AbortError')) {
+            // console.error('Audio play error:', err);
+          }
+        }
+        audio.onended = () => {
+          stopAndCleanupAudio(false);
           if (isActive) {
             setTimeout(() => {
               startContinuousListening();
             }, 800);
           }
         };
+      } else {
+        // No audio - set transcript from header if available
+        if (responseText) setTranscript(`🧠 ${responseText}`);
       }
 
       return responseText || `I understand you said "${command}". Let me help you with that.`;
@@ -478,6 +519,18 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
           const explore = await supabaseMealsApi.getExplore();
           const meals = explore.success && explore.data ? explore.data : [];
 
+          // Try to extract an ingredient focus from the query (e.g., "recipes for greek yogurt", "ideas with salmon")
+          let ingredientFocus: string | null = null;
+          const ingPatterns = [
+            /\bfor\s+([a-zA-Z ]{2,})$/i,
+            /\bwith\s+([a-zA-Z ]{2,})$/i,
+            /\busing\s+([a-zA-Z ]{2,})$/i
+          ];
+          for (const p of ingPatterns) {
+            const m = lowerCmd.match(p);
+            if (m && m[1]) { ingredientFocus = m[1].trim(); break; }
+          }
+
           const scoredAll = meals
             .map(m => ({
               meal: m,
@@ -492,7 +545,19 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
             .map(s => s.meal)
             ;
 
-          const picked = (scoredAll.length > 0 ? scoredAll : meals).slice(0, 4);
+          let candidateList = (scoredAll.length > 0 ? scoredAll : meals);
+
+          // If an ingredient focus is present, strictly filter recipes to those containing that ingredient term
+          if (ingredientFocus) {
+            const q = ingredientFocus.toLowerCase();
+            const filtered = candidateList.filter(m =>
+              Array.isArray(m.ingredients) && m.ingredients.some(ing => String(ing || '').toLowerCase().includes(q))
+            );
+            candidateList = filtered.length > 0 ? filtered : [];
+          }
+
+          // Limit to 4; if no candidates after strict filtering, show an informative message and do not speak unrelated recipes
+          const picked = candidateList.slice(0, 4);
 
           // Compute missing ingredients per meal
           const missingMap: Record<string, string[]> = {};
@@ -508,12 +573,47 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
 
           setRecommendedMeals(picked);
           setRecommendedMissing(missingMap);
-          setShowRecipeModal(true);
-
-          // Speak only the recipe names (limit 4)
-          const names = picked.map(m => m.title).join(', ');
-          if (names) {
-            await speakResponse(`Here are some ideas: ${names}.`);
+          if (picked.length > 0) {
+            setShowRecipeModal(true);
+            const names = picked.map(m => m.title).join(', ');
+            if (names) {
+              await speakResponse(`Here are some ideas: ${names}.`);
+            }
+          } else if (ingredientFocus) {
+            try {
+              const prompt = `Suggest exactly one concise recipe title using ${ingredientFocus}. No descriptions, just the title.`;
+              const resp = await fetch('/api/gemini', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+              });
+              const data = await resp.json();
+              const title = Array.isArray(data?.recommendations) && data.recommendations[0]
+                ? String(data.recommendations[0])
+                : '';
+              if (title) {
+                const fallbackMeal: Meal = {
+                  id: `gen-${Date.now()}`,
+                  title,
+                  image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&crop=center',
+                  cookTime: 20,
+                  servings: 2,
+                  hasAllIngredients: false,
+                  ingredients: [],
+                  instructions: []
+                };
+                setRecommendedMeals([fallbackMeal]);
+                setRecommendedMissing({ [fallbackMeal.id]: [] });
+                setShowRecipeModal(true);
+                await speakResponse(`Here is an idea: ${fallbackMeal.title}.`);
+              } else {
+                setTranscript(`🧠 No recipes found using ${ingredientFocus}.`);
+                await speakResponse(`No recipes found using ${ingredientFocus}.`);
+              }
+            } catch {
+              setTranscript(`🧠 No recipes found using ${ingredientFocus}.`);
+              await speakResponse(`No recipes found using ${ingredientFocus}.`);
+            }
           }
         } catch (e) {
           console.error('Failed to load recommended meals', e);
@@ -683,16 +783,13 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
         {/* Hidden audio element for TTS playback */}
         <audio ref={audioRef} style={{ display: 'none' }} aria-hidden="true" />
 
-        {showRecipeModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setShowRecipeModal(false)} />
-            <div className="relative z-10 w-full max-w-3xl bg-white rounded-xl shadow-2xl p-6 max-h-[85vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Recommended Recipes</h3>
-                <button onClick={() => setShowRecipeModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {recommendedMeals.map((meal) => {
+        <Dialog open={showRecipeModal} onOpenChange={setShowRecipeModal}>
+          <DialogContent className="max-w-3xl bg-white border-gray-200 shadow-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-gray-900 text-xl">Recommended Recipes</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recommendedMeals.map((meal) => {
                   const missing = recommendedMissing[meal.id] || [];
                   const ready = missing.length === 0;
                   return (
@@ -723,10 +820,9 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
                     </div>
                   );
                 })}
-              </div>
             </div>
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
