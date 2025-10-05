@@ -21,15 +21,28 @@ export async function POST(req: Request) {
   );
 
   const data = await response.json();
+  
+  // Log the full Gemini response to terminal
+  console.log("🔍 Full Gemini API Response:");
+  console.log(JSON.stringify(data, null, 2));
+  
   const text =
     data.candidates?.[0]?.content?.parts?.[0]?.text ||
     "No response from Gemini.";
 
-  // Split Gemini’s answer into up to 3 lines
+  // Log the extracted text
+  console.log("📝 Extracted text from Gemini:");
+  console.log(text);
+
+  // Split Gemini's answer into up to 3 lines
   const recommendations = text
     .split(/\d+\.\s+/)
     .filter(Boolean)
     .slice(0, 3);
+  
+  // Log the final recommendations
+  console.log("✅ Final recommendations being returned:");
+  console.log(recommendations);
 
   return NextResponse.json({ recommendations });
 }

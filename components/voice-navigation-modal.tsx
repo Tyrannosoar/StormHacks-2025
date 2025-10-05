@@ -44,14 +44,14 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       setIsActive(true);
-      setTranscript("🎤 Voice agent ready! FFmpeg is installed - local Whisper is working. Speak now!");
+      setTranscript("🎤 Voice agent activated. I'm listening...");
       
-      // Start the continuous listening loop
+      // Always use the backend API for voice recognition
       await startContinuousListening();
       
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      alert("Sorry, couldn't access your microphone. Please check permissions.");
+      setTranscript("❌ Couldn't access microphone. Please check permissions and try again.");
     }
   };
 
@@ -281,13 +281,28 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Local Whisper error:', errorData);
-        setTranscript(`❌ Local Whisper Error: ${errorData.error || 'Unknown error'}. Check server logs.`);
-        return;
+        console.error('Backend Whisper error:', errorData);
+        
+        if (errorData.fallback) {
+          setTranscript(`🔄 Backend Whisper not available. Using browser speech recognition...`);
+          await fallbackToBrowserSpeech();
+          return;
+        } else {
+          setTranscript(`❌ Backend Error: ${errorData.error || 'Unknown error'}. Using browser speech recognition...`);
+          await fallbackToBrowserSpeech();
+          return;
+        }
       }
 
       const data = await response.json();
-      console.log('Local Whisper response:', data);
+      console.log('Backend response:', data);
+      
+      // Check if the response indicates we should use fallback
+      if (data.fallback) {
+        setTranscript(`🔄 ${data.message || 'Using browser speech recognition...'}`);
+        await fallbackToBrowserSpeech();
+        return;
+      }
       
       const text = data.text?.toLowerCase() || '';
       
@@ -322,11 +337,59 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
   };
 
   const fallbackToBrowserSpeech = async () => {
-    // Local Whisper should be working now with FFmpeg installed
-    // Check and refresh stream if needed
-    await checkAndRefreshStream();
-    setTranscript("🎤 Local Whisper ready! Start speaking...");
-    await startContinuousListening();
+    // Use browser speech recognition as fallback when backend API fails
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      setTranscript("❌ Speech recognition not supported. Please use manual navigation buttons.");
+      return;
+    }
+
+    setTranscript("🎤 Using browser speech recognition...");
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event: any) => {
+        const text = event.results[0][0].transcript.toLowerCase();
+        setTranscript(`✅ You said: "${text}"`);
+        processVoiceCommand(text);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setTranscript(`❌ Speech recognition error: ${event.error}. Please try again.`);
+        // Restart after error
+        if (isActive) {
+          setTimeout(() => {
+            fallbackToBrowserSpeech();
+          }, 2000);
+        }
+      };
+
+      recognition.onend = () => {
+        console.log('Speech recognition ended');
+        if (isActive) {
+          setTimeout(() => {
+            fallbackToBrowserSpeech();
+          }, 1000);
+        }
+      };
+
+      recognition.onstart = () => {
+        setTranscript("🎤 Listening... Speak now!");
+      };
+
+      console.log('Starting browser speech recognition...');
+      recognition.start();
+    } catch (error) {
+      console.error('Error starting speech recognition:', error);
+      setTranscript("❌ Speech recognition failed. Please use manual navigation buttons.");
+    }
   };
 
   const processVoiceCommand = async (command: string) => {
