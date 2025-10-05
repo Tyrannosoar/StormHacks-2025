@@ -2,51 +2,51 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { command, currentPage } = await request.json();
+    const { transcript, sessionId, context, currentPage } = await request.json();
     
-    if (!command) {
-      return NextResponse.json({ error: 'No command provided' }, { status: 400 });
+    if (!transcript) {
+      return NextResponse.json({ error: 'No transcript provided' }, { status: 400 });
     }
 
-    // Create a context-aware prompt for Gemini focused on voice responses
-    const systemPrompt = `You are MagnaCarter, a helpful voice assistant for a grocery management app.
+    if (!process.env.GOOGLE_API_KEY) {
+      return NextResponse.json({ error: 'Missing Google API key' }, { status: 500 });
+    }
 
-User said: "${command}"
+    const systemPrompt = `You are a helpful voice assistant for a grocery management app.
+
+Session: ${sessionId || 'anonymous'}
 Current page: ${currentPage || 'dashboard'}
 
-If the user wants to navigate to a page, respond with a friendly confirmation:
+Context (shopping and storage are arrays):
+${typeof context === 'string' ? context : JSON.stringify(context || {}, null, 2)}
 
-- If they mention "shopping", "shop", "buy", "grocery" → "Taking you to your shopping list. What do you need to buy today?"
-- If they mention "storage", "inventory", "pantry" → "Opening your inventory. Let's see what's in your pantry."
-- If they mention "meals", "recipes", "cooking", "food" → "Here's your meal planner. What sounds good for dinner?"
-- If they mention "camera", "scan", "photo" → "Opening the camera. Ready to scan some items?"
-
-If you don't understand what they want, say: "Sorry, I didn't understand. Try saying 'go to shopping' or 'open storage'."
-
-Keep it conversational and under 20 words. Respond:`;
+Respond concisely (<= 20 words). Prefer actionable responses. If navigation intent is detected, confirm the target page briefly.`;
 
     // Call Gemini API
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: systemPrompt }],
-            },
-          ],
-          generationConfig: {
-            maxOutputTokens: 150,
-            temperature: 0.8,
-            topP: 0.9,
-            topK: 40,
-          },
-        }),
-      }
-    );
+    async function callGemini(model: string) {
+      return fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GOOGLE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
+            contents: [
+              { role: 'user', parts: [{ text: transcript }] },
+              { role: 'user', parts: [{ text: `Context JSON: ${JSON.stringify(context || {})}` }] }
+            ],
+            generationConfig: { maxOutputTokens: 150, temperature: 0.7, topP: 0.9, topK: 40 }
+          })
+        }
+      );
+    }
+
+    let geminiResponse = await callGemini('gemini-2.5-flash');
+    let usedModel = 'gemini-2.5-flash';
+    if (!geminiResponse.ok) {
+      geminiResponse = await callGemini('gemini-1.5-pro');
+      usedModel = 'gemini-1.5-pro';
+    }
 
     if (!geminiResponse.ok) {
       console.error('Gemini API error:', geminiResponse.status);
@@ -57,16 +57,41 @@ Keep it conversational and under 20 words. Respond:`;
     }
 
     const geminiData = await geminiResponse.json();
-    const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 
-      "I understand. Let me help you with that.";
+    const parts = geminiData?.candidates?.[0]?.content?.parts || [];
+    const combined = Array.isArray(parts)
+      ? parts.map((p: any) => (typeof p?.text === 'string' ? p.text : '')).filter(Boolean).join(' ').trim()
+      : '';
+    const responseText = (combined || "I understand. Let me help you with that.").trim();
 
-    console.log('Gemini raw response:', geminiData);
-    console.log('Gemini processed text:', responseText);
+    // Convert text to audio via ElevenLabs
+    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB'}` , {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': process.env.ELEVENLABS_API_KEY || '',
+      },
+      body: JSON.stringify({
+        text: responseText,
+        model_id: 'eleven_monolingual_v1',
+        voice_settings: { stability: 0.5, similarity_boost: 0.5 }
+      })
+    });
 
-    return NextResponse.json({ 
-      text: responseText.trim(),
-      method: 'gemini-ai',
-      fullResponse: geminiData
+    if (!ttsResponse.ok) {
+      const err = await ttsResponse.text();
+      console.error('ElevenLabs API error:', err);
+      return NextResponse.json({ error: 'Text-to-speech failed' }, { status: 500 });
+    }
+
+    const audioBuffer = await ttsResponse.arrayBuffer();
+
+    return new NextResponse(audioBuffer, {
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'X-Response-Text': encodeURIComponent(responseText),
+        'X-Model-Used': usedModel
+      }
     });
 
   } catch (error) {

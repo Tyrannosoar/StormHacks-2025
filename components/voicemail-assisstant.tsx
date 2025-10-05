@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Mic, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 declare global {
   interface Window {
@@ -29,6 +30,7 @@ export default function VoiceMealAssistant() {
   const [transcript, setTranscript] = useState("");
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
   const startListening = () => {
     const recognition = new (window.SpeechRecognition ||
@@ -37,12 +39,18 @@ export default function VoiceMealAssistant() {
     recognition.start();
     setListening(true);
 
+    // Interrupt TTS playback immediately when user starts speaking
+    if (audioPlayer && !audioPlayer.paused) {
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+    }
+
     recognition.onresult = (event: any) => {
       const text = event.results[0][0].transcript;
       setTranscript(text);
       recognition.stop();
       setListening(false);
-      getGeminiRecommendations(text);
+      handleVoiceExchange(text);
     };
 
     recognition.onerror = () => {
@@ -50,36 +58,47 @@ export default function VoiceMealAssistant() {
     };
   };
 
-  const getGeminiRecommendations = async (voiceText: string) => {
+  const handleVoiceExchange = async (voiceText: string) => {
     setLoading(true);
-    setRecommendations([]);
+    if (audioPlayer) {
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+    }
 
-    const prompt = `
-You are a cooking assistant. Based on the ingredients available and the user's voice input, 
-suggest up to 3 meal ideas that can be cooked.
-
-Ingredients I have:
-${groceries.map((g) => `- ${g.name}`).join("\n")}
-
-User said:
-"${voiceText}"
-
-Respond in a short list, like:
-1. ...
-2. ...
-3. ...
-`;
-//has to be modified --> json probably
     try {
-      const response = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const { data: shopping } = await supabase
+        .from('shopping_items')
+        .select('name, amount, priority')
+        .limit(20);
+
+      const { data: storage } = await supabase
+        .from('storage_items')
+        .select('name, amount, expiry_days, category')
+        .limit(20);
+
+      const context = { shopping, storage };
+
+      const res = await fetch('/api/voice-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: voiceText, sessionId: session?.user?.id, context, currentPage: 'meals' })
       });
-      const data = await response.json();
-      setRecommendations(data.recommendations || []);
+
+      if (!res.ok) {
+        setLoading(false);
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      setAudioPlayer(audio);
+      await audio.play();
     } catch (err) {
-      console.error(err);
+      console.error('Voice flow error', err);
     } finally {
       setLoading(false);
     }

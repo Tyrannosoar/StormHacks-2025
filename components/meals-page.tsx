@@ -29,6 +29,7 @@ export function MealsPage() {
   const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([])
   const [exploreMeals, setExploreMeals] = useState<Meal[]>([])
   const [loading, setLoading] = useState(true)
+  const [exploreQuery, setExploreQuery] = useState("")
   const [showSavedRecipes, setShowSavedRecipes] = useState(false)
   const [showCreateRecipe, setShowCreateRecipe] = useState(false)
   const [newRecipe, setNewRecipe] = useState({
@@ -54,6 +55,18 @@ export function MealsPage() {
       const exploreResponse = await supabaseMealsApi.getExplore()
       if (exploreResponse.success && exploreResponse.data) {
         setExploreMeals(exploreResponse.data)
+        // If no explore meals exist, seed the database and refetch
+        if (exploreResponse.data.length === 0) {
+          try {
+            await fetch('/api/meals/seed', { method: 'POST' })
+            const seeded = await supabaseMealsApi.getExplore()
+            if (seeded.success && seeded.data) {
+              setExploreMeals(seeded.data)
+            }
+          } catch (seedErr) {
+            console.error('Failed to seed explore meals:', seedErr)
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to fetch meals:', error)
@@ -343,10 +356,69 @@ export function MealsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {exploreMeals.map((meal) => (
-              <MealCard key={meal.id} meal={meal} />
-            ))}
+          <div className="space-y-6">
+            {/* Explore Filters */}
+            <div className="flex items-center gap-3">
+              <Input
+                placeholder="Search recipes (e.g., chicken, pasta, vegan)"
+                value={exploreQuery}
+                onChange={(e) => setExploreQuery(e.target.value)}
+                className="bg-white/5 border-gray-300/20 text-foreground"
+              />
+            </div>
+
+            {/* Derived lists based on query */}
+            {(() => {
+              const q = exploreQuery.trim().toLowerCase()
+              const filtered = q
+                ? exploreMeals.filter(m =>
+                    m.title.toLowerCase().includes(q) ||
+                    (Array.isArray(m.ingredients) && m.ingredients.some(i => i.toLowerCase().includes(q)))
+                  )
+                : exploreMeals
+
+              const quickAndEasy = filtered.filter(m => (m.cookTime || 0) <= 30)
+              const moreIdeas = filtered.filter(m => (m.cookTime || 0) > 30)
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">No recipes match your search.</p>
+                    <p className="text-sm text-muted-foreground mt-1">Try different keywords like "chicken", "pasta", or "vegan"</p>
+                  </div>
+                )
+              }
+
+              return (
+                <>
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Quick & Easy (≤ 30 min)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {quickAndEasy.length > 0 ? (
+                        quickAndEasy.map(meal => <MealCard key={meal.id} meal={meal} />)
+                      ) : (
+                        <div className="col-span-2 text-center py-8">
+                          <p className="text-muted-foreground">No quick recipes found</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">More Ideas</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {moreIdeas.length > 0 ? (
+                        moreIdeas.map(meal => <MealCard key={meal.id} meal={meal} />)
+                      ) : (
+                        <div className="col-span-2 text-center py-8">
+                          <p className="text-muted-foreground">No more ideas match your search</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )
+            })()}
           </div>
         )}
       </div>

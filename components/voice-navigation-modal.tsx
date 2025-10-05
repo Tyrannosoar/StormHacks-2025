@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Mic, Loader2, Navigation, ShoppingCart, Package, UtensilsCrossed, Camera, Volume2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface VoiceNavigationModalProps {
@@ -45,6 +46,10 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       streamRef.current = stream;
       setIsActive(true);
       setTranscript("🎤 Voice agent activated. I'm listening...");
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
       
       // Always use the backend API for voice recognition
       await startContinuousListening();
@@ -113,6 +118,10 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       mediaRecorder.start();
       setListening(true);
       setTranscript("🎧 Listening... Speak clearly!");
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
 
       // Stop recording after 3 seconds of silence or 10 seconds max
       const maxRecordingTime = 10000; // 10 seconds max
@@ -164,39 +173,56 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
 
   const generateIntelligentResponse = async (command: string, targetPage: string | null, currentPage: string): Promise<string> => {
     try {
-      console.log('🤖 Requesting Gemini response for:', command);
-      
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data: shopping } = await supabase
+        .from('shopping_items')
+        .select('name, amount, priority')
+        .limit(20);
+      const { data: storage } = await supabase
+        .from('storage_items')
+        .select('name, amount, expiry_days, category')
+        .limit(20);
+
       const response = await fetch('/api/voice-assistant', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          command, 
-          currentPage 
+          transcript: command,
+          sessionId: session?.user?.id,
+          context: { shopping, storage },
+          currentPage
         }),
       });
 
       if (!response.ok) {
-        console.error('Voice assistant API error:', response.status);
-        const errorText = await response.text();
-        console.error('API Error details:', errorText);
-        // Fallback to simple response
         return `I understand you said "${command}". Let me help you with that.`;
       }
 
-      const data = await response.json();
-      console.log('🤖 Gemini response:', data);
-      
-      if (data.text && data.text.trim()) {
-        return data.text.trim();
-      } else {
-        console.warn('Empty or invalid response from Gemini:', data);
-        return `I understand you said "${command}". Let me help you with that.`;
+      const responseTextHeader = response.headers.get('X-Response-Text');
+      const responseText = responseTextHeader ? decodeURIComponent(responseTextHeader) : '';
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        try {
+          await audioRef.current.play();
+        } catch (_) {}
+        audioRef.current.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          if (isActive) {
+            setTimeout(() => {
+              startContinuousListening();
+            }, 800);
+          }
+        };
       }
+
+      return responseText || `I understand you said "${command}". Let me help you with that.`;
     } catch (error) {
-      console.error('Error generating intelligent response:', error);
-      // Fallback to simple response
       return `I understand you said "${command}". Let me help you with that.`;
     }
   };
@@ -434,32 +460,25 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
         }
       }
 
-      // Generate intelligent response using Gemini AI
       const intelligentResponse = await generateIntelligentResponse(command, targetPage, currentPage);
       console.log('🎯 Final Gemini response:', intelligentResponse);
       
       if (targetPage && targetPage !== currentPage) {
         setTranscript(`🚀 Navigating to ${getPageName(targetPage)}...`);
         onNavigate(targetPage as any);
-        // Show Gemini's response and speak it
         setTimeout(() => {
           setTranscript(`🧠 ${intelligentResponse}`);
         }, 500);
-        await speakResponse(intelligentResponse);
       } else if (targetPage === currentPage) {
         setTranscript(`📍 You're already on the ${getPageName(currentPage)} page!`);
-        // Show Gemini's response and speak it
         setTimeout(() => {
           setTranscript(`🧠 ${intelligentResponse}`);
         }, 500);
-        await speakResponse(intelligentResponse);
       } else {
         setTranscript(`❓ I didn't understand that. Try saying 'go to shopping', 'go to storage', 'go to meals', or 'go to camera'.`);
-        // Show Gemini's response and speak it
         setTimeout(() => {
           setTranscript(`🧠 ${intelligentResponse}`);
         }, 500);
-        await speakResponse(intelligentResponse);
       }
     } catch (error) {
       console.error('Error processing voice command:', error);
