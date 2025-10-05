@@ -345,7 +345,7 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
       return;
     }
 
-    setTranscript("🎤 Using browser speech recognition as fallback...");
+    setTranscript("🎤 Using browser speech recognition...");
 
     try {
       const recognition = new SpeechRecognition();
@@ -356,16 +356,23 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
 
       recognition.onresult = (event: any) => {
         const text = event.results[0][0].transcript.toLowerCase();
-        setTranscript(`You said: "${text}"`);
+        setTranscript(`✅ You said: "${text}"`);
         processVoiceCommand(text);
       };
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        setTranscript(`Speech recognition error: ${event.error}. Please try again.`);
+        setTranscript(`❌ Speech recognition error: ${event.error}. Please try again.`);
+        // Restart after error
+        if (isActive) {
+          setTimeout(() => {
+            fallbackToBrowserSpeech();
+          }, 2000);
+        }
       };
 
       recognition.onend = () => {
+        console.log('Speech recognition ended');
         if (isActive) {
           setTimeout(() => {
             fallbackToBrowserSpeech();
@@ -377,6 +384,7 @@ export function VoiceNavigationModal({ isOpen, onClose, onNavigate, currentPage 
         setTranscript("🎤 Listening... Speak now!");
       };
 
+      console.log('Starting browser speech recognition...');
       recognition.start();
     } catch (error) {
       console.error('Error starting speech recognition:', error);
