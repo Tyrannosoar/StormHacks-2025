@@ -103,13 +103,31 @@ export function CameraPage({ onClose }: CameraPageProps) {
     setCapturedImage(null)
   }
 
-  const savePhoto = () => {
-    if (capturedImage) {
-      // In a real app, you would save to gallery or process the image
-      console.log("Saving photo...")
-      setCapturedImage(null)
-      onClose()
+  const savePhoto = async () => {
+    if (!capturedImage) return;
+
+    try {
+      console.log("Analyzing receipt...");
+      const response = await fetch("/api/parse-receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: capturedImage }),
+      });
+
+      const data = await response.json();
+      console.log("Gemini extracted:", data);
+
+      // You could now store `data.foodItems` and `data.nonFoodItems` in your global state
+      // or send them to your backend database
+
+      alert("Items extracted! Check console for results.");
+    } catch (err) {
+      console.error("Error analyzing receipt:", err);
+      alert("Failed to analyze receipt.");
     }
+
+    setCapturedImage(null);
+    onClose();
   }
 
   if (capturedImage) {
