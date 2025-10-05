@@ -37,7 +37,8 @@ Return JSON in the structure:
     const imageBase64 = image.split(",")[1];
 
     const result = await model.generateContent([
-      { role: "user", parts: [{ text: prompt }, { inlineData: { data: imageBase64, mimeType: "image/jpeg" } }] },
+      { text: prompt },
+      { inlineData: { data: imageBase64, mimeType: "image/jpeg" } }
     ]);
 
     const textResponse = result.response.text();
