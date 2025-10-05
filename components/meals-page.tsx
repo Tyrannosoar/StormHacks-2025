@@ -308,14 +308,14 @@ export function MealsPage() {
                   await fetchMeals()
                   setShowSavedRecipes(true)
                 }}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
               >
                 <Archive className="w-4 h-4" />
                 View Saved Recipes
               </Button>
               <Button
                 onClick={() => setShowCreateRecipe(true)}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
               >
                 <Calendar className="w-4 h-4" />
                 Create Recipe
