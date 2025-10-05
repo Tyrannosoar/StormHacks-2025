@@ -20,6 +20,16 @@ export async function POST(request: NextRequest) {
 
     console.log('Received audio file:', file.size, 'bytes');
 
+    // Check if we're in a Vercel environment (serverless)
+    if (process.env.VERCEL) {
+      console.log('Running on Vercel - using fallback to browser speech recognition');
+      return NextResponse.json({ 
+        error: 'Server-side Whisper not available on Vercel',
+        fallback: true,
+        message: 'Using browser speech recognition instead'
+      }, { status: 200 });
+    }
+
     // Convert file to buffer
     const buffer = await file.arrayBuffer();
     const audioBuffer = Buffer.from(buffer);
